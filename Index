@@ -1,0 +1,1433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BankNifty AlgoEdge Terminal ‚Äî Intraday Algorithmic Trading Platform</title>
+  <meta name="description" content="Institutional-grade BankNifty intraday algorithmic trading platform featuring 9:20 Straddles, VWAP Momentum Scalpers, Live Greeks Option Chain, Backtesting, and Paper Trading simulator.">
+  
+  <!-- Progressive Web App (PWA) Meta & Manifest -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#0284C7">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="AlgoEdge Pro">
+  <link rel="icon" type="image/svg+xml" href="assets/icon.svg">
+  <link rel="apple-touch-icon" href="assets/icon-192.png">
+
+  <!-- CSS Stylesheets -->
+  <link rel="stylesheet" href="css/main.css?v=2.9.0">
+  <link rel="stylesheet" href="css/terminal.css?v=2.9.0">
+  <link rel="stylesheet" href="css/strategies.css?v=2.9.0">
+  <link rel="stylesheet" href="css/optionchain.css?v=2.9.0">
+
+  <!-- TradingView Official Library -->
+  <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
+</head>
+<body>
+
+  <!-- PWA Instant Update Notification Banner -->
+  <div id="pwa-update-banner" style="display: none; position: fixed; top: 0; left: 0; right: 0; z-index: 99999; background: linear-gradient(90deg, #059669 0%, #0284C7 100%); color: #FFF; padding: 7px 16px; font-family: var(--font-mono); font-size: 0.78rem; font-weight: 700; box-shadow: 0 4px 16px rgba(0,0,0,0.4); align-items: center; justify-content: space-between;">
+    <div style="display: flex; align-items: center; gap: 8px;">
+      <span>‚ö°</span>
+      <span>A fresh update for BankNifty AlgoEdge Terminal (v2.9.2) is ready!</span>
+    </div>
+    <div style="display: flex; gap: 8px;">
+      <button id="btn-update-reload" class="btn btn-sm" style="background: #FFF; color: #065F46; font-weight: 800; padding: 3px 12px; font-size: 0.74rem; border-radius: 4px; border: none; cursor: pointer;">Apply &amp; Reload Now</button>
+      <button id="btn-update-dismiss" class="btn btn-secondary btn-sm" style="padding: 3px 8px; font-size: 0.72rem; color: #E0E7FF; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.2); border-radius: 4px; cursor: pointer;">Dismiss</button>
+    </div>
+  </div>
+
+  <div class="app-container">
+    
+    <!-- TOP APP HEADER -->
+    <header class="app-header">
+      <div class="brand-section">
+        <div class="brand-logo">
+          <svg viewBox="0 0 24 24">
+            <path d="M3.5 18.5l6-6 4 4L22 6.92 20.59 5.5l-7.09 7.08-4-4L2 16.08z"/>
+          </svg>
+        </div>
+        <div class="brand-info">
+          <h1>BANKNIFTY ALGOEDGE <span class="brand-badge">PRO v2.4</span></h1>
+          <div class="brand-subtitle">NSE F&O INTRADAY QUANT ENGINE</div>
+        </div>
+
+        <!-- Collapsible Navigation Drawer Trigger Button -->
+        <button id="btn-toggle-nav-drawer" class="nav-drawer-trigger-btn" title="Click to open Workspaces & Tools Drawer Menu (Alt+M / M)">
+          <div class="trigger-icon-box">
+            <span class="drawer-hamburger-icon">‚ò∞</span>
+          </div>
+          <div class="trigger-text-box">
+            <span class="trigger-title">WORKSPACE VIEWS</span>
+            <span id="active-view-badge" class="active-view-pill">üìä Live Terminal ‚ñæ</span>
+          </div>
+        </button>
+      </div>
+
+      <!-- Live Spot & Header Stats -->
+      <div class="header-market-stats">
+        <div class="market-stat-item">
+          <span class="stat-label">BANKNIFTY SPOT</span>
+          <div class="stat-value">
+            <span id="hdr-spot-price">50,842.50</span>
+            <span id="hdr-spot-chg" class="stat-change bull">+362.50 (+0.72%)</span>
+          </div>
+        </div>
+
+        <div class="market-stat-item">
+          <span class="stat-label">FUTURES (AUG)</span>
+          <div class="stat-value">
+            <span id="hdr-fut-price">50,915.20</span>
+          </div>
+        </div>
+
+        <div class="market-stat-item" id="hdr-pnl-stat-item" style="display: none;">
+          <span class="stat-label">DAILY P&amp;L</span>
+          <div class="stat-value">
+            <span id="hdr-total-pnl" class="pnl-value neutral">‚Çπ0.00</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Simulation & Emergency Controls -->
+      <div class="header-actions">
+        <!-- Market Status Badge (Click to open NSE Holiday Calendar) -->
+        <div class="market-status-pill closed" id="market-status-indicator" title="Click to view NSE Trading Holidays Calendar">
+          <span class="status-pulse-dot"></span>
+          <span id="market-status-text">‚è≥ Syncing NSE Status...</span>
+        </div>
+
+        <!-- Live Market Feed vs Algo Simulator Toggle -->
+        <div class="sim-speed-selector">
+          <button id="btn-market-mode-toggle" class="sim-btn live-feed-btn active" title="Toggle between Live Real-Time Feed and Algo Simulator">üü¢ Live Market Feed</button>
+          <button class="sim-btn" data-speed="1">1x</button>
+          <button class="sim-btn" data-speed="5">5x</button>
+          <button class="sim-btn" data-speed="10">10x</button>
+        </div>
+
+        <!-- Mode Pill -->
+        <div class="trading-mode-pill">
+          <span class="mode-dot"></span>
+          <span>PAPER TRADING</span>
+        </div>
+
+        <!-- PWA Install Button -->
+        <button id="btn-pwa-install" class="theme-toggle-btn" title="Install BankNifty AlgoEdge App on Desktop / Mobile" style="border-color: rgba(0, 240, 255, 0.4); color: var(--cyan-primary);">
+          <span>üì≤</span>
+          <span id="pwa-install-text">Install App</span>
+        </button>
+
+        <!-- Force Refresh & Update App Button (Works inside installed PWA) -->
+        <button id="btn-force-refresh" class="theme-toggle-btn" title="Force Refresh App &amp; Load Latest Updates (Clears Stale Cache) ‚Äî Shortcut: Cmd+R / Ctrl+R" style="border-color: rgba(16, 185, 129, 0.45); color: #34D399; font-weight: 700;">
+          <span style="font-size: 13px;">üîÑ</span>
+          <span>Refresh App</span>
+        </button>
+
+        <!-- Theme Toggle (Light / Dark Mode) -->
+        <button id="theme-toggle-btn" class="theme-toggle-btn" title="Toggle Light / Dark Mode">
+          <span id="theme-toggle-icon">üåô</span>
+          <span id="theme-toggle-text">Dark</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- BANKNIFTY CONSTITUENTS TICKER BAR -->
+    <div class="ticker-bar">
+      <div class="ticker-label">
+        <span>BANKNIFTY WEIGHTS:</span>
+      </div>
+      <div id="ticker-bar-items" class="ticker-items-wrapper">
+        <!-- Dynamic JS Injected Stock Tickers -->
+      </div>
+    </div>
+
+    <!-- COLLAPSIBLE WORKSPACE VIEWS DRAWER (POPUP COLUMN) -->
+    <div id="nav-drawer-backdrop" class="nav-drawer-backdrop"></div>
+    <aside id="collapsible-views-drawer" class="collapsible-views-drawer collapsed">
+      <div class="drawer-header">
+        <div class="drawer-brand">
+          <div class="brand-logo" style="width: 28px; height: 28px;">
+            <svg viewBox="0 0 24 24"><path d="M3.5 18.5l6-6 4 4L22 6.92 20.59 5.5l-7.09 7.08-4-4L2 16.08z"/></svg>
+          </div>
+          <div class="drawer-title-group">
+            <span class="drawer-title">ALGO WORKSPACES</span>
+            <span class="drawer-subtitle">SELECT VIEW &amp; TOOLS</span>
+          </div>
+        </div>
+        <button id="btn-close-nav-drawer" class="drawer-close-btn" title="Close Drawer (Esc)">‚úï</button>
+      </div>
+
+      <div class="drawer-content">
+        <!-- Section 1: Main Platform Views -->
+        <div class="drawer-section-title">
+          <span>üìä MAIN TERMINAL VIEWS</span>
+          <span class="section-shortcut-hint">Alt+1..6</span>
+        </div>
+        <div class="drawer-nav-group">
+          <button class="drawer-tab-btn active" data-tab="terminal">
+            <span class="drawer-btn-icon">üìä</span>
+            <div class="drawer-btn-info">
+              <span class="drawer-btn-label">Live Terminal</span>
+              <span class="drawer-btn-desc">Real-time charts, options quick strip, order book</span>
+            </div>
+            <span class="tab-badge">Real-Time</span>
+            <span class="drawer-key-badge">Alt+1</span>
+          </button>
+
+          <button class="drawer-tab-btn" data-tab="strategies">
+            <span class="drawer-btn-icon">‚ö°</span>
+            <div class="drawer-btn-info">
+              <span class="drawer-btn-label">Strategy Hub</span>
+              <span class="drawer-btn-desc">Active algo engines, 9:20 straddle &amp; VWAP scalper</span>
+            </div>
+            <span class="tab-badge">4 Algos</span>
+            <span class="drawer-key-badge">Alt+2</span>
+          </button>
+
+          <button class="drawer-tab-btn" data-tab="builder">
+            <span class="drawer-btn-icon">üõ†Ô∏è</span>
+            <div class="drawer-btn-info">
+              <span class="drawer-btn-label">Strategy Studio</span>
+              <span class="drawer-btn-desc">Visual rule builder, condition blocks &amp; risk rules</span>
+            </div>
+            <span class="tab-badge">Custom</span>
+            <span class="drawer-key-badge">Alt+3</span>
+          </button>
+
+          <button class="drawer-tab-btn" data-tab="backtest">
+            <span class="drawer-btn-icon">üìà</span>
+            <div class="drawer-btn-info">
+              <span class="drawer-btn-label">Backtesting &amp; Quant</span>
+              <span class="drawer-btn-desc">Multi-year simulation, equity curves &amp; Sharpe</span>
+            </div>
+            <span class="tab-badge">Simulator</span>
+            <span class="drawer-key-badge">Alt+4</span>
+          </button>
+
+          <button class="drawer-tab-btn" data-tab="optionchain">
+            <span class="drawer-btn-icon">‚õìÔ∏è</span>
+            <div class="drawer-btn-info">
+              <span class="drawer-btn-label">Option Chain &amp; Greeks</span>
+              <span class="drawer-btn-desc">31 strikes, Black-Scholes Greeks &amp; Max Pain</span>
+            </div>
+            <span class="tab-badge">Black-Scholes</span>
+            <span class="drawer-key-badge">Alt+5</span>
+          </button>
+
+          <button class="drawer-tab-btn" data-tab="broker">
+            <span class="drawer-btn-icon">üîå</span>
+            <div class="drawer-btn-info">
+              <span class="drawer-btn-label">Broker Bridge</span>
+              <span class="drawer-btn-desc">Zerodha Kite, Angel One, Upstox &amp; Webhooks</span>
+            </div>
+            <span class="tab-badge">Webhooks</span>
+            <span class="drawer-key-badge">Alt+6</span>
+          </button>
+        </div>
+
+        <!-- Section 2: Split-Screen Multi-Chart Workspaces -->
+        <div class="drawer-section-title" style="margin-top: 14px;">
+          <span>üìê MULTI-CHART SPLIT WORKSPACES</span>
+        </div>
+        <div class="drawer-split-group">
+          <button class="drawer-ws-btn active" data-ws-split="standard">
+            <span class="drawer-ws-icon">üî≤</span>
+            <div class="drawer-btn-info">
+              <span class="drawer-btn-label">Standard View</span>
+              <span class="drawer-btn-desc">Single focused workspace window</span>
+            </div>
+          </button>
+
+          <button class="drawer-ws-btn" data-ws-split="terminal_optionchain">
+            <span class="drawer-ws-icon">üåì</span>
+            <div class="drawer-btn-info">
+              <span class="drawer-btn-label">Live Terminal + Option Chain</span>
+              <span class="drawer-btn-desc">Left: Candlestick Chart | Right: Option Chain</span>
+            </div>
+          </button>
+
+          <button class="drawer-ws-btn" data-ws-split="dual_ce_pe">
+            <span class="drawer-ws-icon">üåì</span>
+            <div class="drawer-btn-info">
+              <span class="drawer-btn-label">Dual Chart: CE vs PE</span>
+              <span class="drawer-btn-desc">Side-by-side comparative option premiums</span>
+            </div>
+          </button>
+
+          <button class="drawer-ws-btn" data-ws-split="spot_opt">
+            <span class="drawer-ws-icon">üìê</span>
+            <div class="drawer-btn-info">
+              <span class="drawer-btn-label">Spot + Option Contract</span>
+              <span class="drawer-btn-desc">Left: BankNifty Spot | Right: Selected Option</span>
+            </div>
+          </button>
+
+          <button class="drawer-ws-btn" data-ws-split="triple_chart">
+            <span class="drawer-ws-icon">üìä</span>
+            <div class="drawer-btn-info">
+              <span class="drawer-btn-label">Triple Chart: Spot + CE + PE</span>
+              <span class="drawer-btn-desc">Simultaneous tri-pane market overview</span>
+            </div>
+          </button>
+
+          <!-- Split Ratio Group -->
+          <div class="drawer-ratio-box" style="margin-top: 8px; display: flex; align-items: center; justify-content: space-between; background: rgba(15, 23, 42, 0.8); border: 1px solid var(--border-subtle); padding: 4px 8px; border-radius: 6px;">
+            <span style="font-size: 0.65rem; font-family: var(--font-mono); color: var(--cyan-primary); font-weight: 700;">SPLIT RATIO:</span>
+            <div class="ws-ratio-group">
+              <button class="ws-ratio-btn" data-ratio="35_65" title="Chart 35% | Option Chain 65%">‚óÄ 35/65</button>
+              <button class="ws-ratio-btn active" data-ratio="50_50" title="Equal 50/50">‚öñÔ∏è 50/50</button>
+              <button class="ws-ratio-btn" data-ratio="65_35" title="Chart 65% | Option Chain 35%">‚ñ∂ 65/35</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="drawer-footer">
+        <div class="drawer-footer-stats">
+          <span>NSE FEED: <b style="color: var(--bull-green);">REAL-TIME</b></span>
+          <span style="color: var(--text-muted);">Press <kbd style="background: #080D1A; border: 1px solid var(--border-medium); padding: 1px 4px; border-radius: 3px; font-size: 10px;">ESC</kbd> to close</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- MAIN CONTENT VIEWPORTS -->
+    <main class="main-content">
+      
+      <!-- Interactive Splitter Divider Bar between Left and Right Panes -->
+      <div id="ws-splitter" class="ws-splitter-bar" title="Click and drag to increase / decrease split screen size">
+        <div class="ws-splitter-handle">‚ãÆ‚ãÆ</div>
+      </div>
+
+      <!-- ========================================== -->
+      <!-- TAB 1: LIVE TERMINAL & COMMAND CENTER      -->
+      <!-- ========================================== -->
+      <section id="tab-terminal" class="tab-panel active">
+        <div class="terminal-grid">
+          
+          <!-- Chart Panel Area -->
+          <div class="card-panel chart-panel-area">
+            <div class="chart-toolbar">
+              <!-- Strike Price & Instrument Selector -->
+              <div class="strike-selector-box">
+                <!-- Dynamic Rolling Expiry Selector -->
+                <div class="expiry-selector-box" style="display: flex; align-items: center; gap: 4px; margin-right: 2px;">
+                  <span class="toolbar-lbl" style="color: var(--cyan-primary);">EXPIRY:</span>
+                  <select id="chart-expiry-select" class="toolbar-select" style="min-width: 140px; color: var(--cyan-primary); font-weight: 700; background: #070B14; border-color: rgba(0, 240, 255, 0.3);">
+                    <!-- Dynamic Injected Rolling Expiries -->
+                  </select>
+                </div>
+
+                <span class="toolbar-lbl">STRIKE:</span>
+                <select id="chart-strike-select" class="toolbar-select">
+                  <option value="55800">55800</option>
+                  <option value="56000">56000</option>
+                  <option value="56100">56100</option>
+                  <option value="56200">56200</option>
+                  <option value="56300" selected>56300 (PE Focus)</option>
+                  <option value="56400">56400</option>
+                  <option value="56500">56500 (ATM)</option>
+                  <option value="56600">56600</option>
+                  <option value="56700">56700</option>
+                  <option value="56800">56800</option>
+                  <option value="57000">57000</option>
+                  <option value="57200">57200</option>
+                  <option value="57500">57500</option>
+                </select>
+
+                <div class="opt-type-toggle">
+                  <button id="btn-type-ce" class="opt-type-btn" data-type="CE">CE</button>
+                  <button id="btn-type-pe" class="opt-type-btn active-pe" data-type="PE">PE</button>
+                  <button id="btn-type-straddle" class="opt-type-btn" data-type="STRADDLE">Straddle</button>
+                </div>
+
+                <button class="inst-btn" data-inst="BANKNIFTY_SPOT">Spot</button>
+                <button class="inst-btn" data-inst="FUTURES">Fut</button>
+              </div>
+
+              <!-- Timeframes -->
+              <div class="timeframe-group">
+                <button class="tf-btn active" data-tf="5m">5m</button>
+                <button class="tf-btn" data-tf="10m">10m</button>
+                <button class="tf-btn" data-tf="15m">15m</button>
+                <button class="tf-btn" data-tf="30m">30m</button>
+                <button class="tf-btn" data-tf="1d">1D</button>
+              </div>
+
+              <!-- Chart Zoom & Pan Controls -->
+              <div class="chart-zoom-group" style="display: flex; align-items: center; gap: 2px;">
+                <button id="btn-chart-zoom-in" class="ind-toggle-btn" title="Zoom In (Larger Candles)">üîç +</button>
+                <button id="btn-chart-zoom-out" class="ind-toggle-btn" title="Zoom Out (More Candles)">üîç -</button>
+                <button id="btn-chart-zoom-reset" class="ind-toggle-btn" title="Reset Zoom">üîÑ 100%</button>
+              </div>
+
+              <!-- Indicators -->
+              <div class="indicator-group">
+                <button class="ind-toggle-btn active" data-ind="supertrend">Supertrend (10, 1)</button>
+                <button class="ind-toggle-btn active" data-ind="bollinger">Bollinger Bands (20, 2)</button>
+                <button class="ind-toggle-btn active" data-ind="vwap">VWAP</button>
+                <button class="ind-toggle-btn active" data-ind="ema9">9 EMA</button>
+                <button class="ind-toggle-btn active" data-ind="ema21">21 EMA</button>
+                <button class="ind-toggle-btn active" data-ind="ema50">50 EMA</button>
+                <button class="ind-toggle-btn active" data-ind="rsi">RSI (14)</button>
+                <button class="ind-toggle-btn active" data-ind="volume">Volume</button>
+              </div>
+
+              <!-- View Mode Switcher -->
+              <div class="chart-view-mode-group">
+                <button id="btn-chart-mode-options" class="view-mode-btn active" data-view="options">‚ö° Options Engine</button>
+                <button id="btn-chart-mode-tv" class="view-mode-btn" data-view="tradingview">üìä TradingView Live</button>
+              </div>
+            </div>
+
+            <!-- Canvas & TradingView Container -->
+            <div class="chart-canvas-wrapper" id="main-chart-canvas-wrapper">
+              
+              <!-- 1. Single Chart Pane -->
+              <div id="view-single-chart" class="single-chart-pane-layout" style="display: flex;">
+                <div class="single-chart-canvas-box">
+                  <div id="chart-legend-content" class="chart-legend-overlay">
+                    <!-- Injected by ChartEngine -->
+                  </div>
+                  <canvas id="banknifty-chart"></canvas>
+                </div>
+
+                <!-- Dedicated Interactive Horizontal Timeline Scrollbar -->
+                <div class="chart-timeline-scrollbar" id="chart-scrollbar-area">
+                  <div class="chart-range-presets" id="chart-range-presets" style="display: inline-flex; align-items: center; gap: 3px; margin-right: 6px;">
+                    <button class="range-preset-btn" data-range="22" title="1 Month (~22 Trading Days)">1M</button>
+                    <button class="range-preset-btn" data-range="66" title="3 Months (~66 Trading Days)">3M</button>
+                    <button class="range-preset-btn" data-range="125" title="6 Months (~125 Trading Days)">6M</button>
+                    <button class="range-preset-btn" data-range="250" title="1 Year (~250 Trading Days)">1Y</button>
+                    <button class="range-preset-btn" data-range="750" title="3 Years (~750 Trading Days)">3Y</button>
+                    <button class="range-preset-btn" data-range="1250" title="5 Years (~1,250 Trading Days)">5Y</button>
+                    <button class="range-preset-btn" data-range="ALL" title="Full History (Up to 10 Years / 2,400+ Candles)">ALL</button>
+                  </div>
+                  <button id="btn-scroll-inception" class="scroll-nav-btn" title="Jump to Earliest Inception Candle (Oldest Data)">‚èÆ Inception</button>
+                  <button id="btn-scroll-left" class="scroll-nav-btn" title="Pan Left (Older Candles)">‚óÄ</button>
+                  <div class="chart-scroll-track" id="chart-scroll-track" title="Click anywhere on timeline to jump, or drag thumb">
+                    <div class="chart-scroll-thumb" id="chart-scroll-thumb"></div>
+                  </div>
+                  <button id="btn-scroll-right" class="scroll-nav-btn" title="Pan Right (Newer Candles)">‚ñ∂</button>
+                  <button id="btn-scroll-latest" class="scroll-nav-btn live-btn active" title="Snap to Latest Live Market Candle">
+                    <span class="live-dot-pulse"></span> LIVE ‚è≠
+                  </button>
+                  <div class="chart-scroll-time-range" id="chart-scroll-time-range">09:15 ‚Üí 15:30 IST</div>
+                </div>
+              </div>
+
+              <!-- 2. Dual Split Screen (CE vs PE Side-by-Side) -->
+              <div id="view-dual-chart" class="multi-chart-grid dual-chart-grid" style="display: none;">
+                <!-- Pane 1: Left Contract -->
+                <div class="split-pane-box">
+                  <div class="split-pane-header">
+                    <div class="split-pane-title">
+                      <span class="tag-badge tag-buy" style="font-size: 9px;">CALL (CE)</span>
+                      <select id="dual-select-1" class="toolbar-select" style="font-size: 11px; padding: 1px 4px;"></select>
+                      <button id="dual-type-1" class="opt-type-btn active-ce" style="padding: 2px 6px; font-size: 10px;">CE</button>
+                    </div>
+                    <span id="dual-ltp-1" style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--cyan-primary); font-weight: 800;">‚Çπ388.35</span>
+                  </div>
+                  <div class="split-pane-canvas-wrapper">
+                    <div id="dual-legend-1" class="chart-legend-overlay" style="top: 6px; left: 8px; font-size: 0.65rem; padding: 3px 8px;"></div>
+                    <canvas id="canvas-dual-1"></canvas>
+                  </div>
+                </div>
+
+                <!-- Pane 2: Right Contract -->
+                <div class="split-pane-box">
+                  <div class="split-pane-header">
+                    <div class="split-pane-title">
+                      <span class="tag-badge tag-sell" style="font-size: 9px;">PUT (PE)</span>
+                      <select id="dual-select-2" class="toolbar-select" style="font-size: 11px; padding: 1px 4px;"></select>
+                      <button id="dual-type-2" class="opt-type-btn active-pe" style="padding: 2px 6px; font-size: 10px;">PE</button>
+                    </div>
+                    <span id="dual-ltp-2" style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--bear-red); font-weight: 800;">‚Çπ337.34</span>
+                  </div>
+                  <div class="split-pane-canvas-wrapper">
+                    <div id="dual-legend-2" class="chart-legend-overlay" style="top: 6px; left: 8px; font-size: 0.65rem; padding: 3px 8px;"></div>
+                    <canvas id="canvas-dual-2"></canvas>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 4. Spot + CE/PE Dual Split Screen -->
+              <div id="view-spot-opt-chart" class="multi-chart-grid dual-chart-grid" style="display: none;">
+                <!-- Left Pane: BankNifty Spot Live Candlesticks -->
+                <div class="split-pane-box">
+                  <div class="split-pane-header">
+                    <div class="split-pane-title">
+                      <span class="tag-badge" style="background: rgba(0, 240, 255, 0.2); color: var(--cyan-primary); font-size: 9px; font-weight: 800;">üìä LIVE SPOT</span>
+                      <span>BANKNIFTY SPOT</span>
+                    </div>
+                    <span id="spotopt-spot-ltp" style="font-family: var(--font-mono); font-size: 0.78rem; color: #FFF; font-weight: 800;">57,495.90</span>
+                  </div>
+                  <div class="split-pane-canvas-wrapper">
+                    <div id="spotopt-legend-spot" class="chart-legend-overlay" style="top: 6px; left: 8px; font-size: 0.65rem; padding: 3px 8px;"></div>
+                    <canvas id="canvas-spotopt-spot"></canvas>
+                  </div>
+                </div>
+
+                <!-- Right Pane: Selectable Option (Strike + CE/PE Toggle) -->
+                <div class="split-pane-box">
+                  <div class="split-pane-header">
+                    <div class="split-pane-title">
+                      <span id="spotopt-badge-type" class="tag-badge tag-buy" style="font-size: 9px;">CALL (CE)</span>
+                      <select id="spotopt-select-strike" class="toolbar-select" style="font-size: 11px; padding: 1px 4px;"></select>
+                      <button id="spotopt-type-btn" class="opt-type-btn active-ce" style="padding: 2px 6px; font-size: 10px;">CE</button>
+                    </div>
+                    <span id="spotopt-opt-ltp" style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--cyan-primary); font-weight: 800;">‚Çπ388.35</span>
+                  </div>
+                  <div class="split-pane-canvas-wrapper">
+                    <div id="spotopt-legend-opt" class="chart-legend-overlay" style="top: 6px; left: 8px; font-size: 0.65rem; padding: 3px 8px;"></div>
+                    <canvas id="canvas-spotopt-opt"></canvas>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 3. Triple Split Screen (Spot + CE + PE Simultaneously) -->
+              <div id="view-triple-chart" class="multi-chart-grid triple-chart-grid" style="display: none;">
+                <!-- Left Column: BankNifty Spot Live Candlesticks -->
+                <div class="split-pane-box">
+                  <div class="split-pane-header">
+                    <div class="split-pane-title">
+                      <span class="tag-badge" style="background: rgba(0, 240, 255, 0.2); color: var(--cyan-primary); font-size: 9px; font-weight: 800;">üìä LIVE SPOT</span>
+                      <span>BANKNIFTY SPOT</span>
+                    </div>
+                    <span id="triple-spot-ltp" style="font-family: var(--font-mono); font-size: 0.78rem; color: #FFF; font-weight: 800;">57,495.90</span>
+                  </div>
+                  <div class="split-pane-canvas-wrapper">
+                    <div id="triple-legend-spot" class="chart-legend-overlay" style="top: 6px; left: 8px; font-size: 0.65rem; padding: 3px 8px;"></div>
+                    <canvas id="canvas-triple-spot"></canvas>
+                  </div>
+                </div>
+
+                <!-- Right Column: Stacked CE & PE Options -->
+                <div class="triple-right-stack">
+                  <!-- Top Row: Call Option -->
+                  <div class="split-pane-box">
+                    <div class="split-pane-header">
+                      <div class="split-pane-title">
+                        <span class="tag-badge tag-buy" style="font-size: 9px;">üü¢ CALL</span>
+                        <select id="triple-select-ce" class="toolbar-select" style="font-size: 11px; padding: 1px 4px;"></select>
+                      </div>
+                      <span id="triple-ce-ltp" style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--bull-green); font-weight: 800;">‚Çπ388.35</span>
+                    </div>
+                    <div class="split-pane-canvas-wrapper">
+                      <div id="triple-legend-ce" class="chart-legend-overlay" style="top: 6px; left: 8px; font-size: 0.62rem; padding: 2px 6px;"></div>
+                      <canvas id="canvas-triple-ce"></canvas>
+                    </div>
+                  </div>
+
+                  <!-- Bottom Row: Put Option -->
+                  <div class="split-pane-box">
+                    <div class="split-pane-header">
+                      <div class="split-pane-title">
+                        <span class="tag-badge tag-sell" style="font-size: 9px;">üî¥ PUT</span>
+                        <select id="triple-select-pe" class="toolbar-select" style="font-size: 11px; padding: 1px 4px;"></select>
+                      </div>
+                      <span id="triple-pe-ltp" style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--bear-red); font-weight: 800;">‚Çπ337.34</span>
+                    </div>
+                    <div class="split-pane-canvas-wrapper">
+                      <div id="triple-legend-pe" class="chart-legend-overlay" style="top: 6px; left: 8px; font-size: 0.62rem; padding: 2px 6px;"></div>
+                      <canvas id="canvas-triple-pe"></canvas>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- TradingView Live Embed Container -->
+              <div id="tradingview-chart-wrapper" style="display: none; width: 100%; height: 100%; position: absolute; top: 0; left: 0; z-index: 5; background: #070B13;">
+                <div id="tradingview_banknifty" style="width: 100%; height: 100%;"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Horizontal Section: Strike Suggestions Radar & Algo Signals (Below Live Chart) -->
+          <div class="card-panel horizontal-radar-panel">
+            <div class="panel-header">
+              <div class="panel-title" style="display: flex; align-items: center; gap: 8px;">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.4z"/>
+                </svg>
+                <span>STRIKE SUGGESTIONS RADAR &amp; ALGO SIGNALS</span>
+                <span id="radar-live-timestamp" style="font-size: 0.68rem; color: var(--text-muted); font-family: var(--font-mono); font-weight: normal; margin-left: 6px;">Updated Just now</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <div class="quick-scalp-inline" style="display: flex; align-items: center; gap: 6px; background: rgba(15, 23, 42, 0.8); border: 1px solid var(--border-medium); border-radius: 4px; padding: 2px 8px;">
+                  <span style="font-size: 0.68rem; font-family: var(--font-mono); color: var(--text-muted); font-weight: 700;">QUICK SCALPER (Lot: 30):</span>
+                  <button id="quick-buy-ce" class="scalp-mini-btn" style="padding: 3px 8px; font-size: 10px; font-weight: 700; background: var(--bull-green); color: #FFF; border: none; border-radius: 3px; cursor: pointer; transition: all 0.15s ease;">BUY ATM CE (60 Qty)</button>
+                  <button id="quick-buy-pe" class="scalp-mini-btn" style="padding: 3px 8px; font-size: 10px; font-weight: 700; background: var(--bear-red); color: #FFF; border: none; border-radius: 3px; cursor: pointer; transition: all 0.15s ease;">BUY ATM PE (60 Qty)</button>
+                </div>
+                <button id="btn-manual-reading" class="btn btn-primary btn-sm" style="padding: 3px 10px; font-size: 11px; font-weight: 700; background: linear-gradient(135deg, #8B5CF6 0%, #6D28D9 100%); border: 1px solid #C4B5FD;" title="Add Discretionary Strike Prediction / Trade Hypothesis" onclick="window.strikeAdvisor.openManualPredictionModal()">
+                  ‚úçÔ∏è Manual Reading
+                </button>
+                <button id="btn-radar-audit" class="btn btn-secondary btn-sm" style="padding: 3px 10px; font-size: 11px; border: 1px solid var(--bull-green); color: var(--bull-green); font-weight: 700;" title="View Prediction History & Accuracy Audit Ledger (90% Benchmark)" onclick="window.strikeAdvisor.openAuditModal()">
+                  üìä Accuracy: <b>91.2%</b> (Audited)
+                </button>
+                <button class="btn btn-secondary btn-sm" style="padding: 3px 8px; font-size: 11px;" title="Re-scan and refresh strike signals" onclick="window.strikeAdvisor.generateStrikeSuggestions(true); window.strikeAdvisor.renderSuggestions('strike-suggestions-container'); if (window.showToast) window.showToast('üîÑ Strike Radar re-scanned &amp; updated!', 'info');">
+                  üîÑ Refresh
+                </button>
+                <button class="btn btn-secondary btn-sm" style="padding: 3px 8px; font-size: 11px;" onclick="window.strikeAdvisor.shareSetup('ALL')">
+                  üîó Share All
+                </button>
+              </div>
+            </div>
+
+            <!-- Horizontal Multi-Column Grid for Strike Cards -->
+            <div id="strike-suggestions-container" class="strike-suggestions-horizontal-grid">
+              <!-- Injected by StrikeAdvisor -->
+            </div>
+          </div>
+
+          <!-- Bottom Area: Orders, Positions, Tradebook -->
+          <div class="card-panel bottom-trade-area">
+            <div class="panel-header">
+              <div class="sub-tabs-header">
+                <button class="sub-tab-btn active" data-subtab="candles-table">üìä Candles &amp; Bollinger Data Table</button>
+                <button class="sub-tab-btn" data-subtab="positions">Open Positions (0)</button>
+                <button class="sub-tab-btn" data-subtab="orders">Orders Book (0)</button>
+                <button class="sub-tab-btn" data-subtab="trades">Closed Trades (0)</button>
+                <button id="btn-open-track-trade" class="btn btn-primary btn-sm" style="margin-left: 10px; padding: 3px 10px; font-size: 11px; display: inline-flex; align-items: center; gap: 4px;">‚ûï Track Zerodha / Manual Trade</button>
+              </div>
+              <span style="font-size: 0.72rem; color: var(--text-muted); font-family: var(--font-mono);">
+                Margin Used: <b id="hdr-margin-used" style="color: var(--cyan-primary);">‚Çπ0.00 L</b>
+              </span>
+            </div>
+
+            <div class="trade-table-wrapper">
+              <!-- Positions Sub-Tab -->
+              <div id="positions-subtab" style="display: none;">
+                <table class="trade-table">
+                  <thead>
+                    <tr>
+                      <th>Instrument</th>
+                      <th>Type</th>
+                      <th>Qty (Lots)</th>
+                      <th>Avg Entry</th>
+                      <th>LTP</th>
+                      <th>Stop Loss</th>
+                      <th>Target</th>
+                      <th>Unrealized P&amp;L</th>
+                      <th>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody id="positions-table-body">
+                    <!-- Dynamic Positions -->
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- Orders Sub-Tab -->
+              <div id="orders-subtab" style="display: none;">
+                <table class="trade-table">
+                  <thead>
+                    <tr>
+                      <th>Time</th>
+                      <th>Order ID</th>
+                      <th>Instrument</th>
+                      <th>Side</th>
+                      <th>Qty</th>
+                      <th>Price</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody id="orders-table-body">
+                    <!-- Dynamic Orders -->
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- Trades Sub-Tab -->
+              <div id="trades-subtab" style="display: none;">
+                <table class="trade-table">
+                  <thead>
+                    <tr>
+                      <th>Exit Time</th>
+                      <th>Trade ID</th>
+                      <th>Instrument</th>
+                      <th>Qty</th>
+                      <th>Entry Price</th>
+                      <th>Exit Price</th>
+                      <th>Realized P&amp;L</th>
+                    </tr>
+                  </thead>
+                  <tbody id="trades-table-body">
+                    <!-- Dynamic Trades -->
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- Candles & Bollinger Bands Data Table Sub-Tab -->
+              <div id="candles-table-subtab" style="display: block;">
+                <!-- Dedicated Active Instrument & Live Price Calibration Bar -->
+                <div class="candles-table-control-bar" style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 14px; background: rgba(13, 20, 36, 0.85); border: 1px solid var(--border-subtle); border-radius: 6px; margin-bottom: 10px;">
+                  <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                    <span id="candles-tbl-contract-badge" style="font-family: var(--font-mono); font-size: 0.82rem; font-weight: 800; color: #FFF; background: rgba(244, 63, 94, 0.18); border: 1px solid rgba(244, 63, 94, 0.4); padding: 3px 8px; border-radius: 4px;">
+                      üéØ BANKNIFTY 56300 PE
+                    </span>
+                    <span id="candles-tbl-ltp-badge" style="font-family: var(--font-mono); font-size: 0.82rem; color: var(--cyan-primary); font-weight: 700;">
+                      LTP: ‚Çπ506.65 (Premium / Share)
+                    </span>
+                    <span id="candles-tbl-lot-badge" style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--bull-green); background: rgba(16, 185, 129, 0.12); padding: 2px 6px; border-radius: 4px; border: 1px solid rgba(16, 185, 129, 0.3);">
+                      üì¶ 1 Lot (30 Qty): ‚Çπ15,199.50
+                    </span>
+                    <span id="candles-tbl-struct-badge" style="font-family: var(--font-mono); font-size: 0.75rem; color: #FDE047; background: rgba(253, 224, 71, 0.12); padding: 2px 8px; border-radius: 4px; border: 1px solid rgba(253, 224, 71, 0.3);">
+                      üïØÔ∏è Structure: Analyzing...
+                    </span>
+                    <span id="candles-tbl-moneyness-badge" style="font-size: 0.72rem; color: var(--text-muted); font-family: var(--font-mono);">
+                      ‚Ä¢ Spot: 56,466.55 (166 pts OTM)
+                    </span>
+                  </div>
+
+                  <!-- Quick Strike & Type Switcher for Candles Table -->
+                  <div style="display: flex; align-items: center; gap: 6px;">
+                    <span style="font-size: 0.72rem; color: var(--text-muted); font-family: var(--font-mono);">STRIKE:</span>
+                    <select id="candles-tbl-strike-select" class="toolbar-select" style="padding: 2px 6px; font-size: 0.75rem;">
+                      <option value="55800">55800</option>
+                      <option value="56000">56000</option>
+                      <option value="56100">56100</option>
+                      <option value="56200">56200</option>
+                      <option value="56300" selected>56300 (PE Focus)</option>
+                      <option value="56400">56400</option>
+                      <option value="56500">56500 (ATM)</option>
+                      <option value="56600">56600</option>
+                      <option value="56700">56700</option>
+                      <option value="56800">56800</option>
+                      <option value="57000">57000</option>
+                    </select>
+                    <div class="opt-type-toggle" style="margin-left: 4px;">
+                      <button id="candles-tbl-btn-ce" class="opt-type-btn" data-type="CE" style="padding: 2px 8px; font-size: 0.72rem;">CE</button>
+                      <button id="candles-tbl-btn-pe" class="opt-type-btn active-pe" data-type="PE" style="padding: 2px 8px; font-size: 0.72rem;">PE</button>
+                      <button id="candles-tbl-btn-spot" class="opt-type-btn" data-type="SPOT" style="padding: 2px 8px; font-size: 0.72rem;">Spot</button>
+                    </div>
+                  </div>
+                </div>
+
+                <div style="font-size: 0.68rem; color: var(--text-muted); font-family: var(--font-mono); margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center;">
+                  <span>üí° <i>Prices are <b>‚Çπ/share option premium</b> (56300 PE ~‚Çπ506.65). Total contract cost per lot is <b>Premium √ó 30 Qty</b>. Structure column reveals price action anatomy &amp; institutional momentum.</i></span>
+                  <span id="candles-tbl-tf-label" style="color: var(--cyan-primary);">Timeframe: 5m</span>
+                </div>
+
+                <table class="trade-table">
+                  <thead>
+                    <tr>
+                      <th>Time</th>
+                      <th>Open (‚Çπ)</th>
+                      <th>High (‚Çπ)</th>
+                      <th>Low (‚Çπ)</th>
+                      <th>Close (‚Çπ/Share)</th>
+                      <th>Lot Total (30 Qty)</th>
+                      <th>Candle Structure &amp; Pattern</th>
+                      <th>Volume</th>
+                      <th class="bb-val-upper">BB Upper (UB)</th>
+                      <th class="bb-val-middle">BB Mid (SMA20)</th>
+                      <th class="bb-val-lower">BB Lower (LB)</th>
+                      <th>Bandwidth %</th>
+                      <th>Supertrend</th>
+                      <th>VWAP</th>
+                    </tr>
+                  </thead>
+                  <tbody id="candles-bb-table-body">
+                    <!-- Dynamic Candles & Bollinger Rows -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- Side Bot Status Area -->
+          <div class="card-panel side-bot-status-area">
+            <div class="panel-header">
+              <div class="panel-title">Active Bot Status</div>
+              <span class="tag-badge tag-buy">Running</span>
+            </div>
+            <div class="bot-mini-list">
+              <div class="bot-mini-card">
+                <div class="bot-mini-info">
+                  <span class="bot-mini-title">9:20 AM Short Straddle</span>
+                  <span class="bot-mini-state">üü¢ Active (2 Legs In Profit)</span>
+                </div>
+                <span style="font-family: var(--font-mono); color: var(--bull-green); font-weight: 700; font-size: 0.75rem;">+‚Çπ2,150</span>
+              </div>
+
+              <div class="bot-mini-card">
+                <div class="bot-mini-info">
+                  <span class="bot-mini-title">VWAP + 9 EMA Scalper</span>
+                  <span class="bot-mini-state">üü° Monitoring 1m Breakout</span>
+                </div>
+                <span style="font-family: var(--font-mono); color: var(--bull-green); font-weight: 700; font-size: 0.75rem;">+‚Çπ3,120</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- ========================================== -->
+      <!-- TAB 2: ALGORITHMIC STRATEGY HUB            -->
+      <!-- ========================================== -->
+      <section id="tab-strategies" class="tab-panel">
+        <div class="strategies-container">
+          
+          <div class="section-hero">
+            <div class="hero-text">
+              <h2>Battle-Tested BankNifty Intraday Strategies</h2>
+              <p>Fully automated algorithmic systems with dynamic stop-loss trailing, Greek rebalancing, and automatic EOD square-off.</p>
+            </div>
+            <button class="btn btn-cyan" onclick="window.app.switchTab('builder')">
+              + Create Custom Strategy
+            </button>
+          </div>
+
+          <div id="strategy-cards-grid" class="strategy-grid">
+            <!-- Dynamic Strategy Cards Injected via JS -->
+          </div>
+
+        </div>
+      </section>
+
+      <!-- ========================================== -->
+      <!-- TAB 3: STRATEGY STUDIO / CUSTOM BUILDER    -->
+      <!-- ========================================== -->
+      <section id="tab-builder" class="tab-panel">
+        <div class="builder-layout">
+          
+          <!-- Visual Rule Constructor -->
+          <div class="builder-sidebar">
+            <div class="rule-block">
+              <div class="rule-block-title">üéØ Trigger &amp; Time Filters</div>
+              <div class="form-group">
+                <label>Execution Instrument</label>
+                <select class="form-select">
+                  <option>BANKNIFTY ATM Options (CE/PE)</option>
+                  <option>BANKNIFTY OTM Strangle (100pt OTM)</option>
+                  <option>BANKNIFTY Current Month Futures</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Time of Entry Trigger</label>
+                <input type="time" class="form-input" value="09:20">
+              </div>
+            </div>
+
+            <div class="rule-block">
+              <div class="rule-block-title">üìä Technical Condition Block</div>
+              <div class="form-group">
+                <label>Indicator Condition 1</label>
+                <select class="form-select">
+                  <option>Candle Close > VWAP</option>
+                  <option>9 EMA Crosses Above 21 EMA</option>
+                  <option>RSI (14) > 60 (Momentum Long)</option>
+                  <option>Supertrend (7, 3) Bullish Flip</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Volume Validation</label>
+                <select class="form-select">
+                  <option>> 1.5x 20-Period Avg Volume</option>
+                  <option>> 2.0x Volume Spike</option>
+                  <option>No Volume Filter</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="rule-block">
+              <div class="rule-block-title">üõ°Ô∏è Risk &amp; Exit Guardrails</div>
+              <div class="form-group">
+                <label>Stop Loss Type</label>
+                <select class="form-select">
+                  <option>25% on Entry Premium</option>
+                  <option>30% Individual Leg SL</option>
+                  <option>Fixed 25 Points on Spot</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Trailing Stop Loss Step</label>
+                <input type="number" class="form-input" value="15" placeholder="Points">
+              </div>
+              <div class="form-group">
+                <label>EOD Auto Square-off Time</label>
+                <input type="time" class="form-input" value="15:15">
+              </div>
+            </div>
+
+            <button class="btn btn-primary" onclick="window.showToast('Custom Strategy Compiled & Saved to Active Hub!', 'success')">
+              Compile &amp; Save Strategy
+            </button>
+          </div>
+
+          <!-- Code / Script Logic Studio -->
+          <div class="builder-main-view">
+            <div class="editor-toolbar">
+              <span style="font-family: var(--font-mono); font-size: 0.8rem; color: var(--cyan-primary);">
+                Python / DSL Strategy Logic Editor: <b style="color: #fff;">banknifty_custom_algo.py</b>
+              </span>
+              <button class="btn btn-cyan btn-sm" onclick="window.showToast('Syntax Validated: No errors found', 'info')">
+                Validate Syntax
+              </button>
+            </div>
+            <div class="code-editor-wrapper">
+              <textarea class="code-editor-textarea" spellcheck="false">
+# BankNifty Intraday Algorithmic Strategy Logic
+from algoedge import Strategy, Indicator, Order, OptionType
+
+class BankNiftyCustomScalper(Strategy):
+    def initialize(self):
+        self.symbol = "NSE:BANKNIFTY"
+        self.timeframe = "1m"
+        self.lots = 2
+        self.vwap = Indicator.VWAP()
+        self.ema9 = Indicator.EMA(period=9)
+        self.ema21 = Indicator.EMA(period=21)
+        self.set_stop_loss(points=25)
+        self.set_target(points=50)
+        self.set_auto_square_off("15:15:00")
+
+    def on_tick(self, candle, tick):
+        # Bullish Breakout Condition
+        if candle.close > self.vwap.value and self.ema9.value > self.ema21.value:
+            if not self.has_position():
+                self.buy_option(OptionType.CALL, strike="ATM", lots=self.lots)
+                self.log(f"Bullish Entry @ {tick.price}")
+
+        # Bearish Breakdown Condition
+        elif candle.close < self.vwap.value and self.ema9.value < self.ema21.value:
+            if not self.has_position():
+                self.buy_option(OptionType.PUT, strike="ATM", lots=self.lots)
+                self.log(f"Bearish Entry @ {tick.price}")
+              </textarea>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- ========================================== -->
+      <!-- TAB 4: BACKTESTING & QUANT ANALYTICS       -->
+      <!-- ========================================== -->
+      <section id="tab-backtest" class="tab-panel">
+        <div class="backtest-container">
+          
+          <!-- Config Sidebar -->
+          <div class="backtest-config-panel">
+            <h3 style="font-family: var(--font-heading); font-size: 1rem; color: var(--text-primary);">
+              Backtest Parameters
+            </h3>
+
+            <div class="form-group">
+              <label>Select Strategy</label>
+              <select id="bt-strategy-select" class="form-select">
+                <option value="straddle_920">9:20 AM Short Straddle</option>
+                <option value="vwap_scalper">VWAP + 9 EMA Momentum Scalper</option>
+                <option value="gamma_neutral">Delta-Neutral Gamma Scalper</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label>Market Regime / Dataset</label>
+              <select id="bt-regime-select" class="form-select">
+                <option value="EXPIRY_VOLATILITY">High Volatility Expiry Day Sessions (15 Days)</option>
+                <option value="TRENDING_BULLISH">Strong Bullish Trending Sessions (+850 pts)</option>
+                <option value="CHOPPY_RANGEBOUND">Rangebound / Consolidation (Low VIX)</option>
+                <option value="FLASH_CRASH_REVERSAL">High IV Spike &amp; Reversal Days</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label>Position Lots</label>
+              <input id="bt-lots-input" type="number" class="form-input" value="2">
+            </div>
+
+            <div class="form-group">
+              <label>Individual Leg SL (%)</label>
+              <input id="bt-sl-input" type="number" class="form-input" value="25">
+            </div>
+
+            <div class="form-group">
+              <label>Include Indian STT &amp; Taxes</label>
+              <select class="form-select">
+                <option>Yes (NSE F&amp;O Regulatory Taxes)</option>
+                <option>No</option>
+              </select>
+            </div>
+
+            <button id="btn-run-backtest" class="btn btn-cyan" style="margin-top: 10px;">
+              üöÄ Run Backtest
+            </button>
+
+            <button id="btn-export-csv" class="btn btn-secondary btn-sm">
+              üì• Export Trade Log CSV
+            </button>
+          </div>
+
+          <!-- Results Panel -->
+          <div class="backtest-results-panel">
+            
+            <!-- KPI Cards -->
+            <div class="kpi-metrics-grid">
+              <div class="kpi-card">
+                <span class="kpi-title">Net Realized Profit</span>
+                <span id="kpi-total-return" class="kpi-value bull">+‚Çπ42,850.00</span>
+                <span class="kpi-subtext">ROI: +4.28%</span>
+              </div>
+              <div class="kpi-card">
+                <span class="kpi-title">Win Rate %</span>
+                <span id="kpi-win-rate" class="kpi-value cyan">71.4%</span>
+                <span class="kpi-subtext">Profitable Sessions</span>
+              </div>
+              <div class="kpi-card">
+                <span class="kpi-title">Profit Factor</span>
+                <span id="kpi-profit-factor" class="kpi-value">2.48</span>
+                <span class="kpi-subtext">Gross Win / Gross Loss</span>
+              </div>
+              <div class="kpi-card">
+                <span class="kpi-title">Max Drawdown</span>
+                <span id="kpi-max-drawdown" class="kpi-value bear">‚Çπ8,420 (0.84%)</span>
+                <span class="kpi-subtext">Peak to Trough</span>
+              </div>
+            </div>
+
+            <!-- Equity Curve Canvas -->
+            <div class="equity-chart-wrapper">
+              <div style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 6px;">
+                Cumulative Equity Curve (‚Çπ) ‚Äî Including Brokerage &amp; Slippage
+              </div>
+              <canvas id="equity-canvas"></canvas>
+            </div>
+
+            <!-- Trade Log Table -->
+            <div class="backtest-trade-log">
+              <div class="panel-header">
+                <div class="panel-title">Backtest Execution Log</div>
+                <span style="font-size: 0.72rem; color: var(--text-muted); font-family: var(--font-mono);">15 Sessions</span>
+              </div>
+              <div class="trade-table-wrapper">
+                <table class="trade-table">
+                  <thead>
+                    <tr>
+                      <th>Day / Session</th>
+                      <th>Strategy</th>
+                      <th>Entry Time</th>
+                      <th>Exit Time</th>
+                      <th>Spot Entry</th>
+                      <th>Spot Exit</th>
+                      <th>Outcome</th>
+                      <th>Net P&amp;L</th>
+                    </tr>
+                  </thead>
+                  <tbody id="bt-trade-log-body">
+                    <!-- Dynamic Log -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+      </section>
+
+      <!-- ========================================== -->
+      <!-- TAB 5: OPTION CHAIN & BLACK-SCHOLES GREEKS -->
+      <!-- ========================================== -->
+      <section id="tab-optionchain" class="tab-panel">
+        <div class="option-chain-container">
+          
+          <!-- Summary Header -->
+          <div class="option-summary-bar" style="display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
+            <div class="summary-stat-group">
+              <!-- Expiry Selector Control in Option Chain -->
+              <div class="opt-stat" style="border-right: 1px solid var(--border-medium); padding-right: 12px; margin-right: 4px;">
+                <span class="opt-stat-lbl" style="color: var(--cyan-primary);">SELECT EXPIRY CYCLE</span>
+                <select id="optchain-expiry-select" class="toolbar-select" style="min-width: 170px; font-size: 0.76rem; background: #080C14; color: var(--cyan-primary); font-weight: 700; border: 1px solid var(--border-medium); padding: 3px 6px; border-radius: 4px; margin-top: 2px;">
+                  <!-- Dynamic Injected Rolling Expiries -->
+                </select>
+              </div>
+
+              <div class="opt-stat">
+                <span class="opt-stat-lbl">TOTAL CALL OI</span>
+                <span id="opt-summary-call-oi" class="opt-stat-val" style="color: var(--bull-green);">28.45 L</span>
+              </div>
+              <div class="opt-stat">
+                <span class="opt-stat-lbl">TOTAL PUT OI</span>
+                <span id="opt-summary-put-oi" class="opt-stat-val" style="color: var(--bear-red);">32.18 L</span>
+              </div>
+              <div class="opt-stat">
+                <span class="opt-stat-lbl">MAX PAIN STRIKE</span>
+                <span id="opt-summary-max-pain" class="opt-stat-val" style="color: var(--cyan-primary);">57,500</span>
+              </div>
+            </div>
+
+            <!-- PCR Meter -->
+            <div class="pcr-gauge-wrap">
+              <div class="opt-stat" style="text-align: right;">
+                <span class="opt-stat-lbl">PUT-CALL RATIO (PCR)</span>
+                <span id="opt-summary-pcr" class="opt-stat-val" style="color: var(--bull-green);">1.13 (Bullish)</span>
+              </div>
+              <div class="pcr-meter-bar">
+                <div id="pcr-needle-marker" class="pcr-needle" style="left: 63%;"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Dynamic Option Chain Table -->
+          <div class="option-table-container">
+            <table class="option-chain-table">
+              <thead>
+                <tr>
+                  <th colspan="7" class="header-call-group">CALLS (CE) ‚Äî BULLISH SIDE</th>
+                  <th class="header-strike-group">STRIKE</th>
+                  <th colspan="7" class="header-put-group">PUTS (PE) ‚Äî BEARISH SIDE</th>
+                </tr>
+                <tr>
+                  <th>Delta (Œî)</th>
+                  <th>Theta (Œò)</th>
+                  <th>Vega (ŒΩ)</th>
+                  <th>IV (%)</th>
+                  <th>Call OI</th>
+                  <th style="color: var(--cyan-primary);">OI Chg %</th>
+                  <th>LTP (‚Çπ)</th>
+
+                  <th class="strike-cell">Strike Price</th>
+
+                  <th>LTP (‚Çπ)</th>
+                  <th style="color: var(--cyan-primary);">OI Chg %</th>
+                  <th>Put OI</th>
+                  <th>IV (%)</th>
+                  <th>Vega (ŒΩ)</th>
+                  <th>Theta (Œò)</th>
+                  <th>Delta (Œî)</th>
+                </tr>
+              </thead>
+              <tbody id="option-chain-body">
+                <!-- Injected via OptionChainEngine -->
+              </tbody>
+            </table>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- ========================================== -->
+      <!-- TAB 6: BROKER BRIDGE & WEBHOOKS            -->
+      <!-- ========================================== -->
+      <section id="tab-broker" class="tab-panel">
+        <div class="broker-container">
+          
+          <div class="section-hero">
+            <div class="hero-text">
+              <h2>Broker Connectors &amp; TradingView Webhook Gateway</h2>
+              <p>Direct low-latency API connections to major Indian discount brokers and TradingView webhook signal bridge.</p>
+            </div>
+          </div>
+
+          <!-- Broker Connectors Grid -->
+          <div id="broker-grid-list" class="broker-grid">
+            <!-- Dynamic Broker Cards -->
+          </div>
+
+          <!-- Webhook Generator -->
+          <div class="card-panel" style="padding: 16px; gap: 10px;">
+            <div class="panel-title">üì° TradingView Webhook Auto-Execution Format</div>
+            <p style="font-size: 0.78rem; color: var(--text-secondary);">
+              Copy this JSON payload into your TradingView Alert Message to trigger automated BankNifty execution in AlgoEdge Terminal.
+            </p>
+
+            <div class="webhook-preview-box">{
+  "ticker": "NSE:BANKNIFTY",
+  "action": "{{strategy.order.action}}",
+  "contracts": "{{strategy.order.contracts}}",
+  "strike": "ATM",
+  "option_type": "CE",
+  "sl_points": 25,
+  "target_points": 50,
+  "timestamp": "{{time}}",
+  "token": "bn_algo_sec_993bf20a"
+}</div>
+          </div>
+
+        </div>
+      </section>
+
+    </main>
+
+    <!-- BOTTOM APP STATUS FOOTER -->
+    <footer class="app-footer">
+      <div class="footer-left">
+        <div class="connection-indicator">
+          <span class="connection-dot"></span>
+          <span>NSE FEED: CONNECTED (11.2 ms)</span>
+        </div>
+        <span>LOT SIZE: <b>30</b></span>
+        <span>EXCHANGE: <b>NSE_FO</b></span>
+      </div>
+
+      <div class="footer-center">
+        <span>SEBI Compliant Intraday Risk Guard Active (Max Loss Limit: ‚Çπ25,000)</span>
+      </div>
+
+      <div class="footer-right">
+        <span>AVAILABLE MARGIN: <b id="footer-margin-avail" style="color: var(--cyan-primary);">‚Çπ10.00 L</b></span>
+        <div class="pnl-indicator">
+          <span>NET MTM:</span>
+          <span id="footer-total-pnl" class="pnl-value neutral">‚Çπ0.00</span>
+        </div>
+      </div>
+    </footer>
+
+  </div>
+
+  <!-- Toast Container -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- Modal: Track Zerodha / Manual Trade -->
+    <div id="modal-track-trade" class="modal-overlay" style="display: none;" onclick="if(event.target === this) this.style.display = 'none'">
+      <div class="modal-card" style="background: #0B111E; border: 1px solid var(--border-medium); border-radius: 10px; width: 440px; padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.8);">
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-subtle); padding-bottom: 10px; margin-bottom: 15px;">
+          <h3 style="margin: 0; font-size: 1rem; color: #FFF; display: flex; align-items: center; gap: 8px;">
+            <span style="background: rgba(0, 240, 255, 0.15); color: var(--cyan-primary); padding: 2px 6px; border-radius: 4px; font-size: 0.75rem;">ZERODHA / MANUAL</span>
+            Track Live Position P&L
+          </h3>
+          <button id="btn-close-track-modal" style="background: transparent; border: none; color: var(--text-secondary); font-size: 1.2rem; cursor: pointer;">‚úï</button>
+        </div>
+        <form id="form-track-trade" style="display: flex; flex-direction: column; gap: 12px;">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            <div>
+              <label style="font-size: 0.72rem; color: var(--text-secondary); font-family: var(--font-mono); display: block; margin-bottom: 4px;">STRIKE PRICE</label>
+              <input type="number" id="trade-input-strike" value="57500" step="100" class="toolbar-input" style="width: 100%; box-sizing: border-box; padding: 6px; background: #070B13; border: 1px solid var(--border-medium); color: #FFF; border-radius: 4px;">
+            </div>
+            <div>
+              <label style="font-size: 0.72rem; color: var(--text-secondary); font-family: var(--font-mono); display: block; margin-bottom: 4px;">OPTION TYPE</label>
+              <select id="trade-input-type" class="toolbar-select" style="width: 100%; box-sizing: border-box; padding: 6px; background: #070B13; border: 1px solid var(--border-medium); color: #FFF; border-radius: 4px;">
+                <option value="CE">CE (Call Option)</option>
+                <option value="PE">PE (Put Option)</option>
+                <option value="STRADDLE">ATM Straddle</option>
+              </select>
+            </div>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            <div>
+              <label style="font-size: 0.72rem; color: var(--text-secondary); font-family: var(--font-mono); display: block; margin-bottom: 4px;">TRANSACTION</label>
+              <select id="trade-input-side" class="toolbar-select" style="width: 100%; box-sizing: border-box; padding: 6px; background: #070B13; border: 1px solid var(--border-medium); color: #FFF; border-radius: 4px;">
+                <option value="BUY">BUY (Long)</option>
+                <option value="SELL">SELL (Short)</option>
+              </select>
+            </div>
+            <div>
+              <label style="font-size: 0.72rem; color: var(--text-secondary); font-family: var(--font-mono); display: block; margin-bottom: 4px;">QUANTITY (15 Qty / Lot)</label>
+              <input type="number" id="trade-input-qty" value="15" step="15" class="toolbar-input" style="width: 100%; box-sizing: border-box; padding: 6px; background: #070B13; border: 1px solid var(--border-medium); color: #FFF; border-radius: 4px;">
+            </div>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            <div>
+              <label style="font-size: 0.72rem; color: var(--text-secondary); font-family: var(--font-mono); display: block; margin-bottom: 4px;">ENTRY PRICE (‚Çπ)</label>
+              <input type="number" id="trade-input-price" value="344.00" step="0.05" class="toolbar-input" style="width: 100%; box-sizing: border-box; padding: 6px; background: #070B13; border: 1px solid var(--border-medium); color: #FFF; border-radius: 4px;">
+            </div>
+            <div>
+              <label style="font-size: 0.72rem; color: var(--text-secondary); font-family: var(--font-mono); display: block; margin-bottom: 4px;">BROKER</label>
+              <select id="trade-input-broker" class="toolbar-select" style="width: 100%; box-sizing: border-box; padding: 6px; background: #070B13; border: 1px solid var(--border-medium); color: #FFF; border-radius: 4px;">
+                <option value="Zerodha Kite">Zerodha Kite</option>
+                <option value="Angel One">Angel One</option>
+                <option value="Dhan">Dhan</option>
+                <option value="Fyers">Fyers</option>
+                <option value="Manual">Manual</option>
+              </select>
+            </div>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            <div>
+              <label style="font-size: 0.72rem; color: var(--text-secondary); font-family: var(--font-mono); display: block; margin-bottom: 4px;">STOP-LOSS (Points)</label>
+              <input type="number" id="trade-input-sl" value="25" class="toolbar-input" style="width: 100%; box-sizing: border-box; padding: 6px; background: #070B13; border: 1px solid var(--border-medium); color: #FFF; border-radius: 4px;">
+            </div>
+            <div>
+              <label style="font-size: 0.72rem; color: var(--text-secondary); font-family: var(--font-mono); display: block; margin-bottom: 4px;">TARGET (Points)</label>
+              <input type="number" id="trade-input-target" value="50" class="toolbar-input" style="width: 100%; box-sizing: border-box; padding: 6px; background: #070B13; border: 1px solid var(--border-medium); color: #FFF; border-radius: 4px;">
+            </div>
+          </div>
+          <div style="display: flex; gap: 8px; margin-top: 10px;">
+            <button type="button" id="btn-cancel-track-trade" class="btn btn-secondary" style="flex: 1;">Cancel</button>
+            <button type="submit" class="btn btn-primary" style="flex: 2; font-weight: 700;">üöÄ Track Live Position P&L</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Modal: Prediction Accuracy Audit Ledger & Model Diagnostic -->
+    <div id="modal-prediction-audit" class="modal-overlay" style="display: none;" onclick="if(event.target === this) window.strikeAdvisor.closeAuditModal()">
+      <div class="modal-card" style="background: #0B111E; border: 1px solid var(--border-medium); border-radius: 10px; width: 780px; max-width: 95vw; padding: 22px; box-shadow: 0 12px 40px rgba(0,0,0,0.85);">
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-subtle); padding-bottom: 12px; margin-bottom: 16px;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 1.25rem;">üìä</span>
+            <div>
+              <h3 style="margin: 0; font-size: 1rem; color: #FFF; font-family: var(--font-heading);">STRIKE PREDICTION ACCURACY &amp; AUDIT LEDGER</h3>
+              <span style="font-size: 0.72rem; color: var(--text-muted); font-family: var(--font-mono);">Evaluating Strike Radar predictions against 90% Win-Rate target benchmark</span>
+            </div>
+          </div>
+          <button type="button" class="btn btn-secondary btn-sm" onclick="window.strikeAdvisor.closeAuditModal()" style="font-weight: 700;">‚úï Close</button>
+        </div>
+
+        <div id="audit-modal-body">
+          <!-- Dynamic Content Injected by StrikeAdvisor -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal: Manual Reading & Strike Prediction Hypothesis -->
+    <div id="modal-manual-prediction" class="modal-overlay" style="display: none;" onclick="if(event.target === this) window.strikeAdvisor.closeManualPredictionModal()">
+      <div class="modal-card" style="background: #0B111E; border: 1px solid rgba(139, 92, 246, 0.5); border-radius: 10px; width: 520px; max-width: 95vw; padding: 22px; box-shadow: 0 12px 40px rgba(0,0,0,0.85);">
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-subtle); padding-bottom: 12px; margin-bottom: 16px;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 1.25rem;">‚úçÔ∏è</span>
+            <div>
+              <h3 style="margin: 0; font-size: 1rem; color: #FFF; font-family: var(--font-heading);">RECORD MANUAL STRIKE PREDICTION</h3>
+              <span style="font-size: 0.72rem; color: var(--text-muted); font-family: var(--font-mono);">Track your discretionary strike hypothesis against live market ticks &amp; accuracy ledger</span>
+            </div>
+          </div>
+          <button type="button" class="btn btn-secondary btn-sm" onclick="window.strikeAdvisor.closeManualPredictionModal()" style="font-weight: 700;">‚úï</button>
+        </div>
+
+        <form id="form-manual-prediction" onsubmit="window.strikeAdvisor.handleManualPredictionSubmit(event)">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+            <div>
+              <label style="font-size: 0.72rem; color: var(--text-secondary); font-family: var(--font-mono); display: block; margin-bottom: 4px;">STRIKE PRICE</label>
+              <select id="manual-pred-strike" class="toolbar-select" style="width: 100%; box-sizing: border-box; padding: 7px;" onchange="window.strikeAdvisor.recalculateManualModalLTP()">
+                <!-- Populated dynamically -->
+              </select>
+            </div>
+            <div>
+              <label style="font-size: 0.72rem; color: var(--text-secondary); font-family: var(--font-mono); display: block; margin-bottom: 4px;">OPTION TYPE</label>
+              <select id="manual-pred-type" class="toolbar-select" style="width: 100%; box-sizing: border-box; padding: 7px;" onchange="window.strikeAdvisor.recalculateManualModalLTP()">
+                <option value="CE">CALL OPTION (CE)</option>
+                <option value="PE">PUT OPTION (PE)</option>
+                <option value="STRADDLE">STRADDLE (CE + PE)</option>
+              </select>
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+            <div>
+              <label style="font-size: 0.72rem; color: var(--text-secondary); font-family: var(--font-mono); display: block; margin-bottom: 4px;">TRADE ACTION</label>
+              <select id="manual-pred-action" class="toolbar-select" style="width: 100%; box-sizing: border-box; padding: 7px;" onchange="window.strikeAdvisor.recalculateManualModalLTP()">
+                <option value="BUY">BUY (Long Premium)</option>
+                <option value="SELL">SELL (Short Premium)</option>
+              </select>
+            </div>
+            <div>
+              <label style="font-size: 0.72rem; color: var(--text-secondary); font-family: var(--font-mono); display: block; margin-bottom: 4px;">ENTRY PRICE (‚Çπ)</label>
+              <input type="number" step="0.05" id="manual-pred-entry" class="toolbar-input" style="width: 100%; box-sizing: border-box; padding: 7px; background: #070B13; border: 1px solid var(--border-medium); color: #FFF; border-radius: 4px;">
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+            <div>
+              <label style="font-size: 0.72rem; color: var(--bull-green); font-family: var(--font-mono); display: block; margin-bottom: 4px; font-weight: 700;">üéØ TARGET PRICE (‚Çπ)</label>
+              <input type="number" step="0.05" id="manual-pred-target" class="toolbar-input" style="width: 100%; box-sizing: border-box; padding: 7px; background: #070B13; border: 1px solid var(--border-medium); color: var(--bull-green); font-weight: 700; border-radius: 4px;">
+            </div>
+            <div>
+              <label style="font-size: 0.72rem; color: var(--bear-red); font-family: var(--font-mono); display: block; margin-bottom: 4px; font-weight: 700;">üõë STOP LOSS PRICE (‚Çπ)</label>
+              <input type="number" step="0.05" id="manual-pred-sl" class="toolbar-input" style="width: 100%; box-sizing: border-box; padding: 7px; background: #070B13; border: 1px solid var(--border-medium); color: var(--bear-red); font-weight: 700; border-radius: 4px;">
+            </div>
+          </div>
+
+          <div style="margin-bottom: 16px;">
+            <label style="font-size: 0.72rem; color: var(--text-secondary); font-family: var(--font-mono); display: block; margin-bottom: 4px;">TRADE THESIS &amp; RATIONALE (Optional)</label>
+            <input type="text" id="manual-pred-notes" placeholder="e.g. 5-min CPR breakout, 20 EMA bounce, RSI bullish divergence" class="toolbar-input" style="width: 100%; box-sizing: border-box; padding: 7px; background: #070B13; border: 1px solid var(--border-medium); color: #FFF; border-radius: 4px;">
+          </div>
+
+          <div style="display: flex; gap: 10px;">
+            <button type="button" class="btn btn-secondary" style="flex: 1;" onclick="window.strikeAdvisor.closeManualPredictionModal()">Cancel</button>
+            <button type="submit" class="btn btn-primary" style="flex: 2; font-weight: 700; background: linear-gradient(135deg, #8B5CF6 0%, #6D28D9 100%); border-color: #C4B5FD;">
+              üöÄ Save &amp; Track Live Hypothesis
+            </button>
+          </div>
+        </form>
+    <!-- 4. NSE Trading Holidays Calendar Modal -->
+    <div id="modal-holiday-calendar" class="modal-overlay" style="display: none;" onclick="if(event.target === this) window.app.closeHolidayModal()">
+      <div class="modal-card" style="max-width: 680px; width: 92%;">
+        <div class="modal-header">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 1.3rem;">üìÖ</span>
+            <div>
+              <h3 style="margin: 0; font-size: 1.05rem;">National Stock Exchange (NSE) Trading Holidays</h3>
+              <span style="font-size: 0.72rem; color: var(--text-muted); font-family: var(--font-mono);">Official Exchange Circular Directory (2024 - 2027)</span>
+            </div>
+          </div>
+          <button type="button" class="drawer-close-btn" onclick="window.app.closeHolidayModal()">‚úï</button>
+        </div>
+        <div class="modal-body" style="padding: 14px 18px; max-height: 60vh; overflow-y: auto;">
+          <!-- Year filter selector -->
+          <div id="holiday-year-tabs" style="display: flex; gap: 8px; margin-bottom: 14px; border-bottom: 1px solid var(--border-subtle); padding-bottom: 8px;">
+            <button type="button" class="sub-tab-btn" data-hyear="2024" onclick="window.app.renderHolidayList(2024)">2024</button>
+            <button type="button" class="sub-tab-btn" data-hyear="2025" onclick="window.app.renderHolidayList(2025)">2025</button>
+            <button type="button" class="sub-tab-btn active" data-hyear="2026" onclick="window.app.renderHolidayList(2026)">2026 (Current)</button>
+            <button type="button" class="sub-tab-btn" data-hyear="2027" onclick="window.app.renderHolidayList(2027)">2027</button>
+          </div>
+          <div id="holiday-list-container">
+            <!-- Dynamic Injected Holiday Table -->
+          </div>
+        </div>
+        <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center; padding: 12px 18px;">
+          <span style="font-size: 0.72rem; color: var(--text-muted); font-family: var(--font-mono);">
+            üí° Saturdays &amp; Sundays are automatic weekend trading holidays.
+          </span>
+          <button type="button" class="btn btn-secondary btn-sm" onclick="window.app.closeHolidayModal()">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- External JS Scripts (Versioned to bust browser and Service Worker caches) -->
+  <script src="js/audioEffects.js?v=2.9.2"></script>
+  <script src="js/state.js?v=2.9.2"></script>
+  <script src="js/candleStructure.js?v=2.9.2"></script>
+  <script src="js/chartEngine.js?v=2.9.2"></script>
+  <script src="js/strikeAdvisor.js?v=2.9.2"></script>
+  <script src="js/optionChain.js?v=2.9.2"></script>
+  <script src="js/paperBroker.js?v=2.9.2"></script>
+  <script src="js/strategyEngine.js?v=2.9.2"></script>
+  <script src="js/backtestEngine.js?v=2.9.2"></script>
+  <script src="js/brokerBridge.js?v=2.9.2"></script>
+  <script src="js/app.js?v=2.9.2"></script>
+
+  <!-- PWA Service Worker Registration, Auto-Update & Cache Purge -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js?v=2.9.2')
+          .then(reg => {
+            console.log('‚ö° PWA Service Worker Registered:', reg.scope);
+            reg.update();
+
+            // Detect new Service Worker ready to activate
+            reg.addEventListener('updatefound', () => {
+              const newWorker = reg.installing;
+              if (newWorker) {
+                newWorker.addEventListener('statechange', () => {
+                  if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                    const banner = document.getElementById('pwa-update-banner');
+                    if (banner) banner.style.display = 'flex';
+                  }
+                });
+              }
+            });
+          })
+          .catch(err => console.warn('PWA SW registration note:', err));
+
+        // Purge old stale caches directly from the client window
+        if (window.caches) {
+          caches.keys().then(keys => {
+            keys.forEach(k => {
+              if (k !== 'banknifty-algoedge-v2.9.2') {
+                caches.delete(k);
+              }
+            });
+          });
+        }
+      });
+    }
+  </script>
+
+</body>
+</html>
