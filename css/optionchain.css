@@ -1,0 +1,383 @@
+/* ==========================================================================
+   BANKNIFTY ALGOEDGE TERMINAL — OPTION CHAIN, GREEKS & BROKER BRIDGE
+   ========================================================================== */
+
+.option-chain-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 12px;
+  gap: 12px;
+  overflow: hidden;
+}
+
+.option-summary-bar {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 12px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.summary-stat-group {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.opt-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.opt-stat-lbl {
+  font-size: 0.65rem;
+  font-family: var(--font-mono);
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+.opt-stat-val {
+  font-family: var(--font-mono);
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.pcr-gauge-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.pcr-meter-bar {
+  width: 140px;
+  height: 8px;
+  background: linear-gradient(90deg, #F43F5E 0%, #F59E0B 50%, #10B981 100%);
+  border-radius: 4px;
+  position: relative;
+}
+
+.pcr-needle {
+  position: absolute;
+  top: -4px;
+  bottom: -4px;
+  width: 4px;
+  background: #FFFFFF;
+  border-radius: 2px;
+  box-shadow: 0 0 6px #FFFFFF;
+  transform: translateX(-50%);
+  transition: left 0.3s ease;
+}
+
+/* Option Chain Table Layout */
+.option-table-container {
+  flex: 1;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  overflow: auto;
+  position: relative;
+}
+
+.option-chain-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  text-align: center;
+}
+
+.option-chain-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--bg-tertiary);
+  padding: 8px 6px;
+  border-bottom: 1px solid var(--border-medium);
+  font-weight: 600;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.option-chain-table .header-call-group {
+  background: rgba(16, 185, 129, 0.12);
+  color: var(--bull-green);
+  border-bottom: 2px solid var(--bull-green);
+}
+
+.option-chain-table .header-strike-group {
+  background: var(--bg-surface);
+  color: var(--cyan-primary);
+  border-bottom: 2px solid var(--cyan-primary);
+}
+
+.option-chain-table .header-put-group {
+  background: rgba(244, 63, 94, 0.12);
+  color: var(--bear-red);
+  border-bottom: 2px solid var(--bear-red);
+}
+
+.option-chain-table tbody tr {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+  transition: background-color 0.15s ease;
+}
+
+.option-chain-table tbody tr:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.option-chain-table td {
+  padding: 6px 4px;
+  white-space: nowrap;
+}
+
+/* Strike Column & In-The-Money (ITM) Highlighting */
+.strike-cell {
+  background: var(--bg-surface);
+  font-weight: 700;
+  color: #FFFFFF;
+  border-left: 1px solid var(--border-subtle);
+  border-right: 1px solid var(--border-subtle);
+}
+
+.strike-atm-row td {
+  background: rgba(0, 240, 255, 0.12) !important;
+  border-top: 1px solid var(--cyan-primary);
+  border-bottom: 1px solid var(--cyan-primary);
+}
+
+.strike-atm-row .strike-cell {
+  background: var(--cyan-primary) !important;
+  color: #080C14 !important;
+  box-shadow: 0 0 12px var(--cyan-primary);
+}
+
+.itm-call {
+  background: rgba(16, 185, 129, 0.05);
+}
+
+.itm-put {
+  background: rgba(244, 63, 94, 0.05);
+}
+
+.oi-bar-cell {
+  position: relative;
+}
+
+.oi-bar-fill-call {
+  position: absolute;
+  right: 0;
+  top: 4px;
+  bottom: 4px;
+  background: rgba(16, 185, 129, 0.15);
+  z-index: 1;
+  border-radius: 2px;
+}
+
+.oi-bar-fill-put {
+  position: absolute;
+  left: 0;
+  top: 4px;
+  bottom: 4px;
+  background: rgba(244, 63, 94, 0.15);
+  z-index: 1;
+  border-radius: 2px;
+}
+
+.oi-num {
+  position: relative;
+  z-index: 2;
+}
+
+/* ==========================================================================
+   BROKER BRIDGE & SETTINGS
+   ========================================================================== */
+
+.broker-container {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  height: 100%;
+  overflow-y: auto;
+}
+
+.broker-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 16px;
+}
+
+.broker-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.broker-card.connected {
+  border-color: var(--bull-green);
+}
+
+.broker-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.broker-logo-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.broker-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-md);
+  background: var(--bg-surface);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-family: var(--font-heading);
+  color: var(--cyan-primary);
+}
+
+.webhook-preview-box {
+  background: #060911;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 12px;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: #38BDF8;
+  overflow-x: auto;
+  white-space: pre;
+}
+
+/* ==========================================================================
+   LIGHT MODE RULES FOR OPTION CHAIN & GREEKS
+   ========================================================================== */
+[data-theme="light"] .option-chain-container {
+  background: #F8FAFC !important;
+}
+
+[data-theme="light"] .option-summary-bar {
+  background: #FFFFFF !important;
+  border: 1px solid #CBD5E1 !important;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04) !important;
+}
+
+[data-theme="light"] .opt-stat-lbl {
+  color: #475569 !important;
+  font-weight: 700 !important;
+}
+
+[data-theme="light"] .opt-stat-val {
+  color: #0F172A !important;
+}
+
+[data-theme="light"] .option-table-container {
+  background: #FFFFFF !important;
+  border: 1px solid #CBD5E1 !important;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04) !important;
+}
+
+[data-theme="light"] .option-chain-table thead th {
+  background: #F1F5F9 !important;
+  color: #0F172A !important;
+  border-bottom: 1px solid #CBD5E1 !important;
+  font-weight: 700 !important;
+}
+
+[data-theme="light"] .option-chain-table .header-call-group {
+  background: #DCFCE7 !important;
+  color: #15803D !important;
+  border-bottom: 2px solid #16A34A !important;
+  font-weight: 800 !important;
+}
+
+[data-theme="light"] .option-chain-table .header-strike-group {
+  background: #F1F5F9 !important;
+  color: #0F172A !important;
+  border-bottom: 2px solid #0284C7 !important;
+  font-weight: 800 !important;
+}
+
+[data-theme="light"] .option-chain-table .header-put-group {
+  background: #FEE2E2 !important;
+  color: #B91C1C !important;
+  border-bottom: 2px solid #DC2626 !important;
+  font-weight: 800 !important;
+}
+
+[data-theme="light"] .option-chain-table tbody tr {
+  border-bottom: 1px solid #E2E8F0 !important;
+}
+
+[data-theme="light"] .option-chain-table tbody tr:hover {
+  background: #F8FAFC !important;
+}
+
+[data-theme="light"] .option-chain-table td {
+  color: #0F172A !important;
+  font-weight: 600 !important;
+}
+
+[data-theme="light"] .strike-cell {
+  background: #F8FAFC !important;
+  color: #0F172A !important;
+  border-left: 1px solid #CBD5E1 !important;
+  border-right: 1px solid #CBD5E1 !important;
+  font-weight: 800 !important;
+}
+
+[data-theme="light"] .strike-cell b {
+  color: #0F172A !important;
+  font-weight: 800 !important;
+}
+
+[data-theme="light"] .strike-atm-row td {
+  background: #E0F2FE !important;
+  border-top: 2px solid #0284C7 !important;
+  border-bottom: 2px solid #0284C7 !important;
+  color: #0F172A !important;
+}
+
+[data-theme="light"] .strike-atm-row .strike-cell {
+  background: #0284C7 !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 0 10px rgba(2, 132, 199, 0.4) !important;
+}
+
+[data-theme="light"] .strike-atm-row .strike-cell b {
+  color: #FFFFFF !important;
+}
+
+[data-theme="light"] .itm-call {
+  background: rgba(22, 163, 74, 0.08) !important;
+}
+
+[data-theme="light"] .itm-put {
+  background: rgba(220, 38, 38, 0.08) !important;
+}
+
+[data-theme="light"] .oi-num {
+  color: #0F172A !important;
+  font-weight: 700 !important;
+}
+
+[data-theme="light"] .oi-bar-fill-call {
+  background: rgba(22, 163, 74, 0.25) !important;
+}
+
+[data-theme="light"] .oi-bar-fill-put {
+  background: rgba(220, 38, 38, 0.25) !important;
+}
