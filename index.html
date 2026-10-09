@@ -17,10 +17,10 @@
   <link rel="apple-touch-icon" href="assets/icon-192.png">
 
   <!-- CSS Stylesheets -->
-  <link rel="stylesheet" href="css/main.css?v=2.9.0">
-  <link rel="stylesheet" href="css/terminal.css?v=2.9.0">
-  <link rel="stylesheet" href="css/strategies.css?v=2.9.0">
-  <link rel="stylesheet" href="css/optionchain.css?v=2.9.0">
+  <link rel="stylesheet" href="css/main.css?v=2.9.3">
+  <link rel="stylesheet" href="css/terminal.css?v=2.9.3">
+  <link rel="stylesheet" href="css/strategies.css?v=2.9.3">
+  <link rel="stylesheet" href="css/optionchain.css?v=2.9.3">
 
   <!-- TradingView Official Library -->
   <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
@@ -31,7 +31,7 @@
   <div id="pwa-update-banner" style="display: none; position: fixed; top: 0; left: 0; right: 0; z-index: 99999; background: linear-gradient(90deg, #059669 0%, #0284C7 100%); color: #FFF; padding: 7px 16px; font-family: var(--font-mono); font-size: 0.78rem; font-weight: 700; box-shadow: 0 4px 16px rgba(0,0,0,0.4); align-items: center; justify-content: space-between;">
     <div style="display: flex; align-items: center; gap: 8px;">
       <span>⚡</span>
-      <span>A fresh update for BankNifty AlgoEdge Terminal (v2.9.2) is ready!</span>
+      <span>A fresh update for BankNifty AlgoEdge Terminal (v2.9.3) is ready!</span>
     </div>
     <div style="display: flex; gap: 8px;">
       <button id="btn-update-reload" class="btn btn-sm" style="background: #FFF; color: #065F46; font-weight: 800; padding: 3px 12px; font-size: 0.74rem; border-radius: 4px; border: none; cursor: pointer;">Apply &amp; Reload Now</button>
@@ -396,13 +396,11 @@
                 <!-- Dedicated Interactive Horizontal Timeline Scrollbar -->
                 <div class="chart-timeline-scrollbar" id="chart-scrollbar-area">
                   <div class="chart-range-presets" id="chart-range-presets" style="display: inline-flex; align-items: center; gap: 3px; margin-right: 6px;">
-                    <button class="range-preset-btn" data-range="22" title="1 Month (~22 Trading Days)">1M</button>
-                    <button class="range-preset-btn" data-range="66" title="3 Months (~66 Trading Days)">3M</button>
-                    <button class="range-preset-btn" data-range="125" title="6 Months (~125 Trading Days)">6M</button>
-                    <button class="range-preset-btn" data-range="250" title="1 Year (~250 Trading Days)">1Y</button>
-                    <button class="range-preset-btn" data-range="750" title="3 Years (~750 Trading Days)">3Y</button>
-                    <button class="range-preset-btn" data-range="1250" title="5 Years (~1,250 Trading Days)">5Y</button>
-                    <button class="range-preset-btn" data-range="ALL" title="Full History (Up to 10 Years / 2,400+ Candles)">ALL</button>
+                    <button class="range-preset-btn active" data-range="TODAY" title="Today's Session Only (09:15 to Current)">Today</button>
+                    <button class="range-preset-btn" data-range="75" title="1 Day (~75 Candles)">1D</button>
+                    <button class="range-preset-btn" data-range="150" title="2 Days (~150 Candles)">2D</button>
+                    <button class="range-preset-btn" data-range="375" title="5 Days (~375 Candles)">5D</button>
+                    <button class="range-preset-btn" data-range="ALL" title="Full 30-Day History (2,100+ Candles)">ALL</button>
                   </div>
                   <button id="btn-scroll-inception" class="scroll-nav-btn" title="Jump to Earliest Inception Candle (Oldest Data)">⏮ Inception</button>
                   <button id="btn-scroll-left" class="scroll-nav-btn" title="Pan Left (Older Candles)">◀</button>
@@ -919,6 +917,7 @@ class BankNiftyCustomScalper(Strategy):
             <div class="form-group">
               <label>Select Strategy</label>
               <select id="bt-strategy-select" class="form-select">
+                <option value="python_quant_supertrend" selected>🐍 Python Quant: Supertrend [10, 1] + CPR + Deep ITM + ML</option>
                 <option value="straddle_920">9:20 AM Short Straddle</option>
                 <option value="vwap_scalper">VWAP + 9 EMA Momentum Scalper</option>
                 <option value="gamma_neutral">Delta-Neutral Gamma Scalper</option>
@@ -1379,23 +1378,24 @@ class BankNiftyCustomScalper(Strategy):
   </div>
 
   <!-- External JS Scripts (Versioned to bust browser and Service Worker caches) -->
-  <script src="js/audioEffects.js?v=2.9.2"></script>
-  <script src="js/state.js?v=2.9.2"></script>
-  <script src="js/candleStructure.js?v=2.9.2"></script>
-  <script src="js/chartEngine.js?v=2.9.2"></script>
-  <script src="js/strikeAdvisor.js?v=2.9.2"></script>
-  <script src="js/optionChain.js?v=2.9.2"></script>
-  <script src="js/paperBroker.js?v=2.9.2"></script>
-  <script src="js/strategyEngine.js?v=2.9.2"></script>
-  <script src="js/backtestEngine.js?v=2.9.2"></script>
-  <script src="js/brokerBridge.js?v=2.9.2"></script>
-  <script src="js/app.js?v=2.9.2"></script>
+  <script src="js/audioEffects.js?v=2.9.4"></script>
+  <script src="js/state.js?v=2.9.4"></script>
+  <script src="js/candleStructure.js?v=2.9.4"></script>
+  <script src="js/chartEngine.js?v=2.9.4"></script>
+  <script src="js/strikeAdvisor.js?v=2.9.4"></script>
+  <script src="js/optionChain.js?v=2.9.4"></script>
+  <script src="js/paperBroker.js?v=2.9.4"></script>
+  <script src="js/strategyEngine.js?v=2.9.4"></script>
+  <script src="js/backtestEngine.js?v=2.9.4"></script>
+  <script src="js/brokerBridge.js?v=2.9.4"></script>
+  <script src="js/app.js?v=2.9.4"></script>
+  <script src="js/websocketClient.js?v=2.9.4"></script>
 
   <!-- PWA Service Worker Registration, Auto-Update & Cache Purge -->
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js?v=2.9.2')
+        navigator.serviceWorker.register('./sw.js?v=2.9.4')
           .then(reg => {
             console.log('⚡ PWA Service Worker Registered:', reg.scope);
             reg.update();
@@ -1419,7 +1419,7 @@ class BankNiftyCustomScalper(Strategy):
         if (window.caches) {
           caches.keys().then(keys => {
             keys.forEach(k => {
-              if (k !== 'banknifty-algoedge-v2.9.2') {
+              if (k !== 'banknifty-algoedge-v2.9.4') {
                 caches.delete(k);
               }
             });
