@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bg-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#080C14"/>
+      <stop offset="50%" stop-color="#0F172A"/>
+      <stop offset="100%" stop-color="#030712"/>
+    </linearGradient>
+    <linearGradient id="cyan-glow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00F0FF"/>
+      <stop offset="100%" stop-color="#3B82F6"/>
+    </linearGradient>
+    <linearGradient id="green-glow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#10B981"/>
+      <stop offset="100%" stop-color="#059669"/>
+    </linearGradient>
+    <linearGradient id="purple-glow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#8B5CF6"/>
+      <stop offset="100%" stop-color="#6366F1"/>
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#00F0FF" flood-opacity="0.35"/>
+    </filter>
+  </defs>
+
+  <!-- Background Card -->
+  <rect width="512" height="512" rx="108" fill="url(#bg-grad)"/>
+  <rect x="8" y="8" width="496" height="496" rx="100" fill="none" stroke="url(#cyan-glow)" stroke-width="4" stroke-opacity="0.3"/>
+
+  <!-- Candlesticks & Chart Grid Gridlines -->
+  <line x1="80" y1="160" x2="432" y2="160" stroke="#1E293B" stroke-width="2" stroke-dasharray="6,6"/>
+  <line x1="80" y1="256" x2="432" y2="256" stroke="#1E293B" stroke-width="2" stroke-dasharray="6,6"/>
+  <line x1="80" y1="352" x2="432" y2="352" stroke="#1E293B" stroke-width="2" stroke-dasharray="6,6"/>
+
+  <!-- Candlestick 1 (Bearish) -->
+  <line x1="140" y1="180" x2="140" y2="340" stroke="#F43F5E" stroke-width="4" stroke-linecap="round"/>
+  <rect x="122" y="210" width="36" height="90" rx="4" fill="#F43F5E"/>
+
+  <!-- Candlestick 2 (Bullish) -->
+  <line x1="220" y1="200" x2="220" y2="380" stroke="#10B981" stroke-width="4" stroke-linecap="round"/>
+  <rect x="202" y="240" width="36" height="100" rx="4" fill="#10B981"/>
+
+  <!-- Candlestick 3 (Strong Bullish Breakout) -->
+  <line x1="300" y1="130" x2="300" y2="320" stroke="#10B981" stroke-width="4" stroke-linecap="round"/>
+  <rect x="282" y="160" width="36" height="120" rx="4" fill="#10B981"/>
+
+  <!-- Candlestick 4 (Breakout Runner) -->
+  <line x1="380" y1="90" x2="380" y2="270" stroke="#00F0FF" stroke-width="4" stroke-linecap="round"/>
+  <rect x="362" y="110" width="36" height="110" rx="4" fill="#00F0FF"/>
+
+  <!-- Dynamic Uptrend Algorithm Line -->
+  <path d="M 90 380 Q 180 320 250 260 T 430 110" fill="none" stroke="url(#cyan-glow)" stroke-width="8" stroke-linecap="round" filter="url(#shadow)"/>
+
+  <!-- Arrow Indicator -->
+  <polygon points="440,100 405,105 425,125" fill="#00F0FF"/>
+
+  <!-- Pro Badge at Bottom -->
+  <rect x="176" y="415" width="160" height="38" rx="8" fill="rgba(0, 240, 255, 0.15)" stroke="#00F0FF" stroke-width="2"/>
+  <text x="256" y="440" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="18" font-weight="900" fill="#00F0FF" text-anchor="middle" letter-spacing="3">ALGOEDGE</text>
+</svg>
