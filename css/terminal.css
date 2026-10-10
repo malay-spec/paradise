@@ -2044,61 +2044,108 @@
   /* Option Chain Mobile Layout & Segmented Filter */
   .opt-mobile-filter-bar {
     display: flex !important;
-    gap: 6px !important;
-    padding: 8px 10px !important;
-    background: var(--bg-tertiary) !important;
+    gap: 4px !important;
+    padding: 6px 8px !important;
+    background: #0B111E !important;
     border-bottom: 1px solid var(--border-subtle) !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    scrollbar-width: none !important;
+  }
+
+  .opt-mobile-filter-bar::-webkit-scrollbar {
+    display: none !important;
   }
 
   .opt-filter-btn {
-    flex: 1 !important;
-    background: rgba(15, 23, 42, 0.7) !important;
+    flex: 1 0 auto !important;
+    background: rgba(15, 23, 42, 0.8) !important;
     border: 1px solid var(--border-medium) !important;
     color: var(--text-secondary) !important;
     border-radius: 6px !important;
-    padding: 7px 8px !important;
+    padding: 6px 10px !important;
     font-size: 0.72rem !important;
     font-weight: 700 !important;
     cursor: pointer !important;
     text-align: center !important;
+    white-space: nowrap !important;
     transition: all 0.15s ease !important;
   }
 
   .opt-filter-btn.active {
-    background: rgba(0, 240, 255, 0.18) !important;
+    background: rgba(0, 240, 255, 0.22) !important;
     border-color: var(--cyan-primary) !important;
-    color: #FFF !important;
-    box-shadow: 0 0 8px rgba(0, 240, 255, 0.25) !important;
+    color: #FFFFFF !important;
+    box-shadow: 0 0 10px rgba(0, 240, 255, 0.35) !important;
   }
 
   .option-table-container {
     overflow-x: auto !important;
+    overflow-y: auto !important;
     -webkit-overflow-scrolling: touch;
     border-radius: var(--radius-md) !important;
+    max-height: calc(100vh - 170px) !important;
   }
 
   .option-chain-table {
-    font-size: 0.68rem !important;
+    font-size: 0.72rem !important;
     width: 100% !important;
   }
 
   .option-chain-table th,
   .option-chain-table td {
-    padding: 6px 4px !important;
+    padding: 7px 4px !important;
     white-space: nowrap !important;
   }
 
+  /* Core Mode: Show Strike Price, Call OI, Call LTP, Put LTP, Put OI */
+  .option-chain-table.view-core .col-greek,
+  .option-chain-table.view-core .col-iv,
+  .option-chain-table.view-core .col-oichg {
+    display: none !important;
+  }
+
+  .option-chain-table.view-core .strike-cell {
+    background: rgba(0, 240, 255, 0.12) !important;
+    font-weight: 800 !important;
+    font-size: 0.78rem !important;
+    border-left: 2px solid var(--cyan-primary) !important;
+    border-right: 2px solid var(--cyan-primary) !important;
+  }
+
   /* Filter: CE Only on Mobile */
-  .option-chain-table.filter-ce-only .header-put-group,
-  .option-chain-table.filter-ce-only th:nth-child(n+9),
-  .option-chain-table.filter-ce-only td:nth-child(n+9) {
+  .option-chain-table.filter-ce-only .col-put,
+  .option-chain-table.filter-ce-only .header-put-group {
+    display: none !important;
+  }
+  .option-chain-table.filter-ce-only .col-greek {
     display: none !important;
   }
 
   /* Filter: PE Only on Mobile */
-  .option-chain-table.filter-pe-only .header-call-group,
-  .option-chain-table.filter-pe-only th:nth-child(-n+7),
-  .option-chain-table.filter-pe-only td:nth-child(-n+7) {
+  .option-chain-table.filter-pe-only .col-call,
+  .option-chain-table.filter-pe-only .header-call-group {
+    display: none !important;
+  }
+  .option-chain-table.filter-pe-only .col-greek {
+    display: none !important;
+  }
+
+  /* Filter: Greeks Only */
+  .option-chain-table.view-greeks .col-oi,
+  .option-chain-table.view-greeks .col-oichg,
+  .option-chain-table.view-greeks .col-ltp {
+    display: none !important;
+  }
+
+  /* Split Mode Responsive Handling on Mobile */
+  .main-content.ws-split-active {
+    display: flex !important;
+    flex-direction: column !important;
+    height: auto !important;
+    overflow-y: auto !important;
+  }
+  .main-content.ws-split-active #ws-splitter {
     display: none !important;
   }
 

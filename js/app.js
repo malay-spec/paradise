@@ -347,18 +347,20 @@ class Application {
           window.scrollTo({ top: 0, behavior: 'smooth' });
         } else if (mobTab === 'paper') {
           if (tabTerminal) tabTerminal.classList.remove('mobile-view-radar');
-          this.switchTab('paper');
-          window.scrollTo({ top: 0, behavior: 'smooth' });
+          this.switchTab('terminal');
+          const posBtn = document.querySelector('.sub-tab-btn[data-subtab="positions"]');
+          if (posBtn) posBtn.click();
+          const tradeArea = document.querySelector('.bottom-trade-area');
+          if (tradeArea) {
+            setTimeout(() => tradeArea.scrollIntoView({ behavior: 'smooth' }), 80);
+          }
         } else if (mobTab === 'menu') {
-          const drawer = document.getElementById('collapsible-views-drawer');
-          const backdrop = document.getElementById('nav-drawer-backdrop');
-          if (drawer) drawer.classList.toggle('collapsed');
-          if (backdrop) backdrop.classList.toggle('active');
+          toggleDrawer();
         }
       });
     });
 
-    // Mobile Option Chain Segmented CE / PE Filter
+    // Mobile Option Chain Segmented Filter (Core OI & LTP | Calls | Puts | Greeks | All)
     document.querySelectorAll('.opt-filter-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         document.querySelectorAll('.opt-filter-btn').forEach(b => b.classList.remove('active'));
@@ -366,9 +368,23 @@ class Application {
         const side = btn.getAttribute('data-opt-side');
         const table = document.querySelector('.option-chain-table');
         if (!table) return;
-        table.classList.remove('filter-ce-only', 'filter-pe-only');
-        if (side === 'ce') table.classList.add('filter-ce-only');
-        if (side === 'pe') table.classList.add('filter-pe-only');
+        table.classList.remove('view-core', 'filter-ce-only', 'filter-pe-only', 'view-greeks', 'view-all');
+        if (side === 'core') table.classList.add('view-core');
+        else if (side === 'ce') table.classList.add('filter-ce-only');
+        else if (side === 'pe') table.classList.add('filter-pe-only');
+        else if (side === 'greeks') table.classList.add('view-greeks');
+        else if (side === 'all') table.classList.add('view-all');
+
+        // When switching to 'all', auto-center table horizontally on ATM strike
+        if (side === 'all') {
+          const container = document.querySelector('.option-table-container');
+          const atm = container ? container.querySelector('.strike-atm-row .strike-cell') : null;
+          if (container && atm) {
+            setTimeout(() => {
+              container.scrollLeft = atm.offsetLeft - (container.clientWidth / 2) + (atm.clientWidth / 2);
+            }, 50);
+          }
+        }
       });
     });
 
@@ -867,6 +883,26 @@ class Application {
       setTimeout(() => this.chartEngine.resize(), 50);
     } else if (tabId === 'optionchain') {
       window.optionChainEngine.renderTable('option-chain-body');
+      const table = document.querySelector('.option-chain-table');
+      if (table) {
+        const activeBtn = document.querySelector('.opt-filter-btn.active');
+        const activeSide = activeBtn ? activeBtn.getAttribute('data-opt-side') : (window.innerWidth <= 768 ? 'core' : 'all');
+        table.classList.remove('view-core', 'filter-ce-only', 'filter-pe-only', 'view-greeks', 'view-all');
+        if (activeSide === 'core') table.classList.add('view-core');
+        else if (activeSide === 'ce') table.classList.add('filter-ce-only');
+        else if (activeSide === 'pe') table.classList.add('filter-pe-only');
+        else if (activeSide === 'greeks') table.classList.add('view-greeks');
+        else if (activeSide === 'all') {
+          table.classList.add('view-all');
+          const container = document.querySelector('.option-table-container');
+          const atm = container ? container.querySelector('.strike-atm-row .strike-cell') : null;
+          if (container && atm) {
+            setTimeout(() => {
+              container.scrollLeft = atm.offsetLeft - (container.clientWidth / 2) + (atm.clientWidth / 2);
+            }, 60);
+          }
+        }
+      }
     } else if (tabId === 'backtest') {
       setTimeout(() => {
         if (window.backtestEngine.currentResults) {

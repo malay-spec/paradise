@@ -21,6 +21,10 @@ import concurrent.futures
 ssl_ctx = ssl._create_unverified_context()
 cached_market_data = None
 last_market_fetch_time = 0
+cached_1d_candles = None
+last_1d_fetch_time = 0
+cached_constituents = None
+last_constituents_fetch_time = 0
 
 NSE_HOLIDAYS = {
     # 2024
@@ -221,7 +225,7 @@ def compute_realistic_volume(ts, open_p, high_p, low_p, close_p, raw_vol=None, i
 def fetch_live_market_data():
     global cached_market_data, last_market_fetch_time
     now = time.time()
-    if cached_market_data and (now - last_market_fetch_time < 3):
+    if cached_market_data and (now - last_market_fetch_time < 4):
         return cached_market_data
 
     headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'}
@@ -364,44 +368,52 @@ def fetch_live_market_data():
         results['session_date'] = today_date
 
     # Fetch BankNifty 1D Daily chart (up to 10 years / 2,400+ daily bars for multi-year personal analysis)
-    candles_1d = []
-    for rng in ['10y', '5y', '2y']:
-        try:
-            url_1d = f"https://query1.finance.yahoo.com/v8/finance/chart/{symbols['spot']}?interval=1d&range={rng}"
-            req_1d = urllib.request.Request(url_1d, headers=headers)
-            with urllib.request.urlopen(req_1d, context=ssl_ctx, timeout=8) as resp_1d:
-                data_1d = json.loads(resp_1d.read().decode())['chart']['result'][0]
-                ts_1d = data_1d.get('timestamp', [])
-                q_1d = data_1d['indicators']['quote'][0]
-                temp_1d = []
-                for i in range(len(ts_1d)):
-                    o = q_1d['open'][i]
-                    h = q_1d['high'][i]
-                    l = q_1d['low'][i]
-                    c = q_1d['close'][i]
-                    raw_v = q_1d['volume'][i] if ('volume' in q_1d and i < len(q_1d['volume'])) else None
-                    if o is not None and c is not None:
-                        v = compute_realistic_volume(ts_1d[i], o, h, l, c, raw_vol=raw_v, is_daily=True)
-                        t_str = time.strftime("%d %b %Y", time.localtime(ts_1d[i]))
-                        temp_1d.append({
-                            "time": t_str,
-                            "date": time.strftime("%Y-%m-%d", time.localtime(ts_1d[i])),
-                            "timestamp": ts_1d[i] * 1000,
-                            "open": round(o, 2),
-                            "high": round(h, 2),
-                            "low": round(l, 2),
-                            "close": round(c, 2),
-                            "volume": int(v),
-                            "vwap": round((o + h + l + c) / 4, 2)
-                        })
-                if temp_1d:
-                    candles_1d = temp_1d
-                    break
-        except Exception as e_1d:
-            print(f"Error fetching 1d candles with range={rng}: {e_1d}")
+    global cached_1d_candles, last_1d_fetch_time
+    if cached_1d_candles and (now - last_1d_fetch_time < 300):
+        candles_1d = cached_1d_candles
+    else:
+        candles_1d = []
+        for rng in ['10y', '5y', '2y']:
+            try:
+                url_1d = f"https://query1.finance.yahoo.com/v8/finance/chart/{symbols['spot']}?interval=1d&range={rng}"
+                req_1d = urllib.request.Request(url_1d, headers=headers)
+                with urllib.request.urlopen(req_1d, context=ssl_ctx, timeout=6) as resp_1d:
+                    data_1d = json.loads(resp_1d.read().decode())['chart']['result'][0]
+                    ts_1d = data_1d.get('timestamp', [])
+                    q_1d = data_1d['indicators']['quote'][0]
+                    temp_1d = []
+                    for i in range(len(ts_1d)):
+                        o = q_1d['open'][i]
+                        h = q_1d['high'][i]
+                        l = q_1d['low'][i]
+                        c = q_1d['close'][i]
+                        raw_v = q_1d['volume'][i] if ('volume' in q_1d and i < len(q_1d['volume'])) else None
+                        if o is not None and c is not None:
+                            v = compute_realistic_volume(ts_1d[i], o, h, l, c, raw_vol=raw_v, is_daily=True)
+                            t_str = time.strftime("%d %b %Y", time.localtime(ts_1d[i]))
+                            temp_1d.append({
+                                "time": t_str,
+                                "date": time.strftime("%Y-%m-%d", time.localtime(ts_1d[i])),
+                                "timestamp": ts_1d[i] * 1000,
+                                "open": round(o, 2),
+                                "high": round(h, 2),
+                                "low": round(l, 2),
+                                "close": round(c, 2),
+                                "volume": int(v),
+                                "vwap": round((o + h + l + c) / 4, 2)
+                            })
+                    if temp_1d:
+                        candles_1d = temp_1d
+                        cached_1d_candles = temp_1d
+                        last_1d_fetch_time = time.time()
+                        break
+            except Exception as e_1d:
+                print(f"Error fetching 1d candles with range={rng}: {e_1d}")
 
-    if not candles_1d and cached_market_data and cached_market_data.get('candles_1d'):
-        candles_1d = cached_market_data['candles_1d']
+        if not candles_1d and cached_1d_candles:
+            candles_1d = cached_1d_candles
+        elif not candles_1d and cached_market_data and cached_market_data.get('candles_1d'):
+            candles_1d = cached_market_data['candles_1d']
 
     results['candles_1d'] = candles_1d
 
@@ -419,22 +431,30 @@ def fetch_live_market_data():
         results['vix'] = {"price": 10.76, "change_pct": -5.57}
 
     # Fetch Live BankNifty Stock Constituents in Parallel
-    constituents_list = []
-    try:
-        with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
-            futures = [executor.submit(fetch_single_constituent, cfg, headers) for cfg in CONSTITUENTS_CONFIG]
-            for f in concurrent.futures.as_completed(futures):
-                item = f.result()
-                spot_val = results['spot']['price']
-                pts_contrib = round(item['pct_num'] * item['weight_num'] * (spot_val / 100.0), 1)
-                item['points_contrib'] = f"{'+' if pts_contrib >= 0 else ''}{pts_contrib:.1f} pts"
-                constituents_list.append(item)
-        # Sort by weight descending
-        constituents_list.sort(key=lambda x: x['weight_num'], reverse=True)
-    except Exception as e:
-        print(f"Constituent fetch error: {e}")
-        if cached_market_data and cached_market_data.get('constituents'):
-            constituents_list = cached_market_data['constituents']
+    global cached_constituents, last_constituents_fetch_time
+    if cached_constituents and (now - last_constituents_fetch_time < 20):
+        constituents_list = cached_constituents
+    else:
+        constituents_list = []
+        try:
+            with concurrent.futures.ThreadPoolExecutor(max_workers=6) as executor:
+                futures = [executor.submit(fetch_single_constituent, cfg, headers) for cfg in CONSTITUENTS_CONFIG]
+                for f in concurrent.futures.as_completed(futures):
+                    item = f.result()
+                    spot_val = results.get('spot', {}).get('price', 56466.55)
+                    pts_contrib = round(item['pct_num'] * item['weight_num'] * (spot_val / 100.0), 1)
+                    item['points_contrib'] = f"{'+' if pts_contrib >= 0 else ''}{pts_contrib:.1f} pts"
+                    constituents_list.append(item)
+            # Sort by weight descending
+            constituents_list.sort(key=lambda x: x['weight_num'], reverse=True)
+            cached_constituents = constituents_list
+            last_constituents_fetch_time = time.time()
+        except Exception as e:
+            print(f"Constituent fetch error: {e}")
+            if cached_constituents:
+                constituents_list = cached_constituents
+            elif cached_market_data and cached_market_data.get('constituents'):
+                constituents_list = cached_market_data['constituents']
 
     results['constituents'] = constituents_list
     results['timestamp'] = time.strftime("%Y-%m-%d %H:%M:%S IST")
@@ -442,7 +462,7 @@ def fetch_live_market_data():
     # Attach verified market open/closed/holiday status
     results['market_status'] = get_nse_market_status()
     cached_market_data = results
-    last_market_fetch_time = now
+    last_market_fetch_time = time.time()
     return results
 
 webhook_events = []
@@ -460,43 +480,78 @@ class AlgoTerminalHandler(http.server.SimpleHTTPRequestHandler):
         self.send_header('Access-Control-Allow-Headers', 'Content-Type')
         super().end_headers()
 
+    def copyfile(self, source, outputfile):
+        try:
+            super().copyfile(source, outputfile)
+        except (BrokenPipeError, ConnectionResetError):
+            pass
+
     def do_OPTIONS(self):
         self.send_response(200)
         self.end_headers()
 
     def do_GET(self):
-        if self.path == '/api/health':
-            self.send_response(200)
-            self.send_header('Content-type', 'application/json')
-            self.end_headers()
-            response = {
-                "status": "healthy",
-                "system": "BankNifty AlgoEdge Terminal v2.4",
-                "exchange": "NSE_FO",
-                "symbol": "BANKNIFTY",
-                "tradingview_connected": True,
-                "server_time": time.strftime("%Y-%m-%d %H:%M:%S IST"),
-                "ping_ms": round(random.uniform(8.5, 14.2), 2)
-            }
-            self.wfile.write(json.dumps(response).encode('utf-8'))
-            return
+        try:
+            if self.path == '/api/health':
+                self.send_response(200)
+                self.send_header('Content-type', 'application/json')
+                self.end_headers()
+                response = {
+                    "status": "healthy",
+                    "system": "BankNifty AlgoEdge Terminal v2.4",
+                    "exchange": "NSE_FO",
+                    "symbol": "BANKNIFTY",
+                    "tradingview_connected": True,
+                    "server_time": time.strftime("%Y-%m-%d %H:%M:%S IST"),
+                    "ping_ms": round(random.uniform(8.5, 14.2), 2)
+                }
+                self.wfile.write(json.dumps(response).encode('utf-8'))
+                return
 
-        if self.path == '/api/market/live':
-            self.send_response(200)
-            self.send_header('Content-type', 'application/json')
-            self.end_headers()
-            data = fetch_live_market_data()
-            self.wfile.write(json.dumps(data).encode('utf-8'))
-            return
+            if self.path == '/api/market/live':
+                self.send_response(200)
+                self.send_header('Content-type', 'application/json')
+                self.end_headers()
+                data = fetch_live_market_data()
+                self.wfile.write(json.dumps(data).encode('utf-8'))
+                return
 
-        if self.path == '/api/webhook/tradingview/events':
-            self.send_response(200)
-            self.send_header('Content-type', 'application/json')
-            self.end_headers()
-            self.wfile.write(json.dumps(webhook_events).encode('utf-8'))
-            return
-        
-        return super().do_GET()
+            if self.path == '/api/webhook/tradingview/events':
+                self.send_response(200)
+                self.send_header('Content-type', 'application/json')
+                self.end_headers()
+                self.wfile.write(json.dumps(webhook_events).encode('utf-8'))
+                return
+
+            if self.path.startswith('/api/algo/backtest'):
+                self.send_response(200)
+                self.send_header('Content-type', 'application/json')
+                self.end_headers()
+                trades_path = os.path.join(DIRECTORY, "data", "backtest_trades.json")
+                if os.path.exists(trades_path):
+                    with open(trades_path, "r") as f:
+                        payload = json.load(f)
+                else:
+                    payload = {"status": "NO_DATA", "message": "Run python3 quant_backtester.py to generate"}
+                self.wfile.write(json.dumps(payload).encode('utf-8'))
+                return
+
+            if self.path.startswith('/api/algo/ml-rules'):
+                self.send_response(200)
+                self.send_header('Content-type', 'application/json')
+                self.end_headers()
+                rules_path = os.path.join(DIRECTORY, "data", "ml_rules.json")
+                if os.path.exists(rules_path):
+                    with open(rules_path, "r") as f:
+                        payload = json.load(f)
+                else:
+                    payload = {"status": "NO_DATA", "message": "Run python3 ml_confluence_filter.py to generate"}
+                self.wfile.write(json.dumps(payload).encode('utf-8'))
+                return
+            
+            return super().do_GET()
+        except (BrokenPipeError, ConnectionResetError):
+            pass
 
     def do_POST(self):
         if self.path == '/api/webhook/tradingview':
@@ -535,6 +590,7 @@ class AlgoTerminalHandler(http.server.SimpleHTTPRequestHandler):
 def run_server():
     os.chdir(DIRECTORY)
     socketserver.ThreadingTCPServer.allow_reuse_address = True
+    socketserver.ThreadingTCPServer.daemon_threads = True
     with socketserver.ThreadingTCPServer(("", PORT), AlgoTerminalHandler) as httpd:
         print(f"================================================================")
         print(f" 🚀 BankNifty AlgoEdge Terminal running at http://localhost:{PORT}")

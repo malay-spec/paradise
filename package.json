@@ -1,0 +1,21 @@
+{
+  "name": "banknifty-algo-terminal",
+  "version": "1.0.0",
+  "description": "[![Deploy to GitHub Pages](https://github.com/actions/deploy-pages/actions/workflows/deploy.yml/badge.svg)](https://github.com) [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE) [![PWA Ready](https://img.shields.io/badge/PWA-Installable-cyan.svg)](manifest.json) [![Platform](https://img.shields.io/badge/Platform-Web%20%7C%20Mac%20%7C%20Windows%20%7C%20iOS%20%7C%20Android-green.svg)](#)",
+  "main": "desktop_launcher.js",
+  "scripts": {
+    "start": "node desktop_launcher.js",
+    "stream": "node streamer.js",
+    "desktop": "node desktop_launcher.js",
+    "backtest": "python3 quant_backtester.py",
+    "optimize": "python3 quant_backtester.py --optimize",
+    "ml": "python3 ml_confluence_filter.py",
+    "test": "node -e \"require('ws'); console.log('✓ Node ws package OK');\""
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "ws": "^8.21.3"
+  }
+}

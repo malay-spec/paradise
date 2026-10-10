@@ -141,6 +141,38 @@
   color: #FFFFFF;
   border-left: 1px solid var(--border-subtle);
   border-right: 1px solid var(--border-subtle);
+  position: sticky;
+  left: 0;
+  z-index: 5;
+}
+
+/* Option Chain View Modes (Core, CE, PE, Greeks, All) */
+.option-chain-table.view-core .col-greek,
+.option-chain-table.view-core .col-iv,
+.option-chain-table.view-core .col-oichg {
+  display: none !important;
+}
+
+.option-chain-table.filter-ce-only .col-put,
+.option-chain-table.filter-ce-only .header-put-group {
+  display: none !important;
+}
+.option-chain-table.filter-ce-only .col-greek {
+  display: none !important;
+}
+
+.option-chain-table.filter-pe-only .col-call,
+.option-chain-table.filter-pe-only .header-call-group {
+  display: none !important;
+}
+.option-chain-table.filter-pe-only .col-greek {
+  display: none !important;
+}
+
+.option-chain-table.view-greeks .col-oi,
+.option-chain-table.view-greeks .col-oichg,
+.option-chain-table.view-greeks .col-ltp {
+  display: none !important;
 }
 
 .strike-atm-row td {
@@ -381,3 +413,105 @@
 [data-theme="light"] .oi-bar-fill-put {
   background: rgba(220, 38, 38, 0.25) !important;
 }
+
+/* ==========================================================================
+   MOBILE & TABLET RESPONSIVE SYSTEM FOR OPTION CHAIN & BROKER BRIDGE
+   ========================================================================== */
+@media (max-width: 768px), (orientation: landscape) and (max-height: 600px) {
+  .option-chain-container {
+    height: auto !important;
+    min-height: 100% !important;
+    padding: 6px !important;
+    gap: 8px !important;
+    overflow: visible !important;
+  }
+
+  .option-summary-bar {
+    padding: 8px 10px !important;
+    gap: 8px !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+
+  .summary-stat-group {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 6px 10px !important;
+  }
+
+  .opt-stat {
+    padding: 0 !important;
+    margin: 0 !important;
+    border: none !important;
+  }
+
+  .opt-stat-lbl {
+    font-size: 0.58rem !important;
+  }
+
+  .opt-stat-val {
+    font-size: 0.82rem !important;
+  }
+
+  .pcr-gauge-wrap {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    border-top: 1px solid var(--border-subtle) !important;
+    padding-top: 6px !important;
+  }
+
+  .option-table-container {
+    max-height: calc(100vh - 170px) !important;
+    overflow-x: auto !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+
+  .option-chain-table {
+    font-size: 0.72rem !important;
+  }
+
+  .option-chain-table td,
+  .option-chain-table th {
+    padding: 7px 4px !important;
+    white-space: nowrap !important;
+  }
+
+  .option-chain-table.view-core {
+    width: 100% !important;
+  }
+
+  .option-chain-table.view-core .col-oi {
+    min-width: 62px !important;
+  }
+  .option-chain-table.view-core .col-ltp {
+    min-width: 55px !important;
+  }
+  .option-chain-table.view-core .col-strike {
+    min-width: 68px !important;
+  }
+
+  .broker-container {
+    padding: 8px !important;
+    gap: 12px !important;
+    height: auto !important;
+    min-height: 100% !important;
+    overflow-y: auto !important;
+  }
+
+  .broker-grid {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+
+  .broker-card {
+    width: 100% !important;
+  }
+
+  .webhook-preview-box {
+    font-size: 0.7rem !important;
+    padding: 8px !important;
+  }
+}
+

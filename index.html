@@ -31,7 +31,7 @@
   <div id="pwa-update-banner" style="display: none; position: fixed; top: 0; left: 0; right: 0; z-index: 99999; background: linear-gradient(90deg, #059669 0%, #0284C7 100%); color: #FFF; padding: 7px 16px; font-family: var(--font-mono); font-size: 0.78rem; font-weight: 700; box-shadow: 0 4px 16px rgba(0,0,0,0.4); align-items: center; justify-content: space-between;">
     <div style="display: flex; align-items: center; gap: 8px;">
       <span>⚡</span>
-      <span>A fresh update for BankNifty AlgoEdge Terminal (v2.9.8) is ready!</span>
+      <span>A fresh update for BankNifty AlgoEdge Terminal (v2.9.9) is ready!</span>
     </div>
     <div style="display: flex; gap: 8px;">
       <button id="btn-update-reload" class="btn btn-sm" style="background: #FFF; color: #065F46; font-weight: 800; padding: 3px 12px; font-size: 0.74rem; border-radius: 4px; border: none; cursor: pointer;">Apply &amp; Reload Now</button>
@@ -1073,40 +1073,44 @@ class BankNiftyCustomScalper(Strategy):
                 <div id="pcr-needle-marker" class="pcr-needle" style="left: 63%;"></div>
               </div>
             </div>
+          </div>
+
           <!-- Mobile CE / PE Column Segmented Filter -->
           <div class="opt-mobile-filter-bar" id="opt-mobile-filter-bar">
-            <button type="button" class="opt-filter-btn active" data-opt-side="all">Both (CE &amp; PE)</button>
+            <button type="button" class="opt-filter-btn active" data-opt-side="core">⚡ OI &amp; LTP</button>
             <button type="button" class="opt-filter-btn" data-opt-side="ce">🟢 Calls (CE)</button>
             <button type="button" class="opt-filter-btn" data-opt-side="pe">🔴 Puts (PE)</button>
+            <button type="button" class="opt-filter-btn" data-opt-side="greeks">🔬 Greeks</button>
+            <button type="button" class="opt-filter-btn" data-opt-side="all">📊 All</button>
           </div>
 
           <!-- Dynamic Option Chain Table -->
           <div class="option-table-container">
-            <table class="option-chain-table">
+            <table class="option-chain-table view-core">
               <thead>
-                <tr>
+                <tr class="header-super-group">
                   <th colspan="7" class="header-call-group">CALLS (CE) — BULLISH SIDE</th>
-                  <th class="header-strike-group">STRIKE</th>
+                  <th class="header-strike-group col-strike">STRIKE</th>
                   <th colspan="7" class="header-put-group">PUTS (PE) — BEARISH SIDE</th>
                 </tr>
-                <tr>
-                  <th>Delta (Δ)</th>
-                  <th>Theta (Θ)</th>
-                  <th>Vega (ν)</th>
-                  <th>IV (%)</th>
-                  <th>Call OI</th>
-                  <th style="color: var(--cyan-primary);">OI Chg %</th>
-                  <th>LTP (₹)</th>
+                <tr class="header-col-group">
+                  <th class="col-call col-greek">Delta (Δ)</th>
+                  <th class="col-call col-greek">Theta (Θ)</th>
+                  <th class="col-call col-greek">Vega (ν)</th>
+                  <th class="col-call col-iv">IV (%)</th>
+                  <th class="col-call col-oi">Call OI</th>
+                  <th class="col-call col-oichg" style="color: var(--cyan-primary);">OI Chg %</th>
+                  <th class="col-call col-ltp">LTP (₹)</th>
 
-                  <th class="strike-cell">Strike Price</th>
+                  <th class="strike-cell col-strike">Strike Price</th>
 
-                  <th>LTP (₹)</th>
-                  <th style="color: var(--cyan-primary);">OI Chg %</th>
-                  <th>Put OI</th>
-                  <th>IV (%)</th>
-                  <th>Vega (ν)</th>
-                  <th>Theta (Θ)</th>
-                  <th>Delta (Δ)</th>
+                  <th class="col-put col-ltp">LTP (₹)</th>
+                  <th class="col-put col-oichg" style="color: var(--cyan-primary);">OI Chg %</th>
+                  <th class="col-put col-oi">Put OI</th>
+                  <th class="col-put col-iv">IV (%)</th>
+                  <th class="col-put col-greek">Vega (ν)</th>
+                  <th class="col-put col-greek">Theta (Θ)</th>
+                  <th class="col-put col-greek">Delta (Δ)</th>
                 </tr>
               </thead>
               <tbody id="option-chain-body">
@@ -1453,7 +1457,7 @@ class BankNiftyCustomScalper(Strategy):
         if (window.caches) {
           caches.keys().then(keys => {
             keys.forEach(k => {
-              if (k !== 'banknifty-algoedge-v2.9.8') {
+              if (k !== 'banknifty-algoedge-v2.9.9') {
                 caches.delete(k);
               }
             });

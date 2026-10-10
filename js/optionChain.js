@@ -334,48 +334,48 @@ class OptionChainEngine {
       rowsHtml += `
         <tr class="${isAtmClass}">
           <!-- CALL GREEKS & DATA -->
-          <td class="${callItmClass}">${s.call.delta}</td>
-          <td class="${callItmClass}">${s.call.theta}</td>
-          <td class="${callItmClass}">${s.call.vega}</td>
-          <td class="${callItmClass}">${s.iv}%</td>
-          <td class="${callItmClass} oi-bar-cell" title="Call OI: ${s.call.oi.toLocaleString('en-IN')} shares (${callLots} Lots) | Chg: ${(s.call.chgOI >= 0 ? '+' : '') + s.call.chgOI.toLocaleString('en-IN')}">
+          <td class="${callItmClass} col-call col-greek">${s.call.delta}</td>
+          <td class="${callItmClass} col-call col-greek">${s.call.theta}</td>
+          <td class="${callItmClass} col-call col-greek">${s.call.vega}</td>
+          <td class="${callItmClass} col-call col-iv">${s.iv}%</td>
+          <td class="${callItmClass} oi-bar-cell col-call col-oi" title="Call OI: ${s.call.oi.toLocaleString('en-IN')} shares (${callLots} Lots) | Chg: ${(s.call.chgOI >= 0 ? '+' : '') + s.call.chgOI.toLocaleString('en-IN')}">
             <div class="oi-bar-fill-call" style="width: ${callBarWidth}%;"></div>
             <span class="oi-num">${formatOI(s.call.oi)}</span>
           </td>
           <!-- CALL OI CHG % -->
-          <td class="${callItmClass}" style="text-align: center; font-family: var(--font-mono); font-size: 0.72rem; font-weight: 700; white-space: nowrap;" title="Call OI Change: ${(s.call.chgOI >= 0 ? '+' : '') + s.call.chgOI.toLocaleString('en-IN')} (${callChgSign}${s.call.chgOIPct}%)">
+          <td class="${callItmClass} col-call col-oichg" style="text-align: center; font-family: var(--font-mono); font-size: 0.72rem; font-weight: 700; white-space: nowrap;" title="Call OI Change: ${(s.call.chgOI >= 0 ? '+' : '') + s.call.chgOI.toLocaleString('en-IN')} (${callChgSign}${s.call.chgOIPct}%)">
             <span class="tag-badge ${s.call.chgOIPct >= 0 ? 'tag-buy' : 'tag-sell'}" style="font-size: 10px; padding: 1px 5px; color: ${callChgColor}; border-color: ${callChgColor};">
               ${callChgSign}${s.call.chgOIPct.toFixed(1)}%
             </span>
           </td>
-          <td class="${callItmClass}" style="color: ${s.call.chg >= 0 ? 'var(--bull-green)' : 'var(--bear-red)'}; font-weight: 700; cursor: pointer; text-decoration: underline dotted;" title="Click to view & chart ${s.strike} CE on terminal" onclick="window.app.selectAndChartStrike(${s.strike}, 'CE', ${s.call.ltp})">
+          <td class="${callItmClass} col-call col-ltp" style="color: ${s.call.chg >= 0 ? 'var(--bull-green)' : 'var(--bear-red)'}; font-weight: 700; cursor: pointer; text-decoration: underline dotted;" title="Click to view & chart ${s.strike} CE on terminal" onclick="window.app.selectAndChartStrike(${s.strike}, 'CE', ${s.call.ltp})">
             ₹${s.call.ltp} 📈
           </td>
 
           <!-- STRIKE -->
-          <td class="strike-cell">
+          <td class="strike-cell col-strike">
             <b>${s.strike}</b>
             ${s.isATM ? '<span class="tag-badge tag-algo" style="margin-left: 4px; font-size: 9px;">ATM</span>' : ''}
           </td>
 
           <!-- PUT GREEKS & DATA -->
-          <td class="${putItmClass}" style="color: ${s.put.chg >= 0 ? 'var(--bull-green)' : 'var(--bear-red)'}; font-weight: 700; cursor: pointer; text-decoration: underline dotted;" title="Click to view & chart ${s.strike} PE on terminal" onclick="window.app.selectAndChartStrike(${s.strike}, 'PE', ${s.put.ltp})">
+          <td class="${putItmClass} col-put col-ltp" style="color: ${s.put.chg >= 0 ? 'var(--bull-green)' : 'var(--bear-red)'}; font-weight: 700; cursor: pointer; text-decoration: underline dotted;" title="Click to view & chart ${s.strike} PE on terminal" onclick="window.app.selectAndChartStrike(${s.strike}, 'PE', ${s.put.ltp})">
             📈 ₹${s.put.ltp}
           </td>
           <!-- PUT OI CHG % -->
-          <td class="${putItmClass}" style="text-align: center; font-family: var(--font-mono); font-size: 0.72rem; font-weight: 700; white-space: nowrap;" title="Put OI Change: ${(s.put.chgOI >= 0 ? '+' : '') + s.put.chgOI.toLocaleString('en-IN')} (${putChgSign}${s.put.chgOIPct}%)">
+          <td class="${putItmClass} col-put col-oichg" style="text-align: center; font-family: var(--font-mono); font-size: 0.72rem; font-weight: 700; white-space: nowrap;" title="Put OI Change: ${(s.put.chgOI >= 0 ? '+' : '') + s.put.chgOI.toLocaleString('en-IN')} (${putChgSign}${s.put.chgOIPct}%)">
             <span class="tag-badge ${s.put.chgOIPct >= 0 ? 'tag-buy' : 'tag-sell'}" style="font-size: 10px; padding: 1px 5px; color: ${putChgColor}; border-color: ${putChgColor};">
               ${putChgSign}${s.put.chgOIPct.toFixed(1)}%
             </span>
           </td>
-          <td class="${putItmClass} oi-bar-cell" title="Put OI: ${s.put.oi.toLocaleString('en-IN')} shares (${putLots} Lots) | Chg: ${(s.put.chgOI >= 0 ? '+' : '') + s.put.chgOI.toLocaleString('en-IN')}">
+          <td class="${putItmClass} oi-bar-cell col-put col-oi" title="Put OI: ${s.put.oi.toLocaleString('en-IN')} shares (${putLots} Lots) | Chg: ${(s.put.chgOI >= 0 ? '+' : '') + s.put.chgOI.toLocaleString('en-IN')}">
             <div class="oi-bar-fill-put" style="width: ${putBarWidth}%;"></div>
             <span class="oi-num">${formatOI(s.put.oi)}</span>
           </td>
-          <td class="${putItmClass}">${s.iv}%</td>
-          <td class="${putItmClass}">${s.put.vega}</td>
-          <td class="${putItmClass}">${s.put.theta}</td>
-          <td class="${putItmClass}">${s.put.delta}</td>
+          <td class="${putItmClass} col-put col-iv">${s.iv}%</td>
+          <td class="${putItmClass} col-put col-greek">${s.put.vega}</td>
+          <td class="${putItmClass} col-put col-greek">${s.put.theta}</td>
+          <td class="${putItmClass} col-put col-greek">${s.put.delta}</td>
         </tr>
       `;
     });
