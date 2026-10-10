@@ -1408,24 +1408,24 @@ class BankNiftyCustomScalper(Strategy):
   </div>
 
   <!-- External JS Scripts (Versioned to bust browser and Service Worker caches) -->
-  <script src="js/audioEffects.js?v=2.9.4"></script>
-  <script src="js/state.js?v=2.9.4"></script>
-  <script src="js/candleStructure.js?v=2.9.4"></script>
-  <script src="js/chartEngine.js?v=2.9.4"></script>
-  <script src="js/strikeAdvisor.js?v=2.9.4"></script>
-  <script src="js/optionChain.js?v=2.9.4"></script>
-  <script src="js/paperBroker.js?v=2.9.4"></script>
-  <script src="js/strategyEngine.js?v=2.9.4"></script>
-  <script src="js/backtestEngine.js?v=2.9.4"></script>
-  <script src="js/brokerBridge.js?v=2.9.4"></script>
-  <script src="js/app.js?v=2.9.4"></script>
-  <script src="js/websocketClient.js?v=2.9.4"></script>
+  <script src="js/audioEffects.js?v=2.9.5"></script>
+  <script src="js/state.js?v=2.9.5"></script>
+  <script src="js/candleStructure.js?v=2.9.5"></script>
+  <script src="js/chartEngine.js?v=2.9.5"></script>
+  <script src="js/strikeAdvisor.js?v=2.9.5"></script>
+  <script src="js/optionChain.js?v=2.9.5"></script>
+  <script src="js/paperBroker.js?v=2.9.5"></script>
+  <script src="js/strategyEngine.js?v=2.9.5"></script>
+  <script src="js/backtestEngine.js?v=2.9.5"></script>
+  <script src="js/brokerBridge.js?v=2.9.5"></script>
+  <script src="js/app.js?v=2.9.5"></script>
+  <script src="js/websocketClient.js?v=2.9.5"></script>
 
   <!-- PWA Service Worker Registration, Auto-Update & Cache Purge -->
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js?v=2.9.4')
+        navigator.serviceWorker.register('./sw.js?v=2.9.5')
           .then(reg => {
             console.log('⚡ PWA Service Worker Registered:', reg.scope);
             reg.update();
@@ -1449,7 +1449,7 @@ class BankNiftyCustomScalper(Strategy):
         if (window.caches) {
           caches.keys().then(keys => {
             keys.forEach(k => {
-              if (k !== 'banknifty-algoedge-v2.9.4') {
+              if (k !== 'banknifty-algoedge-v2.9.5') {
                 caches.delete(k);
               }
             });

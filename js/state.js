@@ -8,26 +8,26 @@ class AppState {
 
     // Market Data (Calibrated to Live NSE BankNifty Feed)
     this.symbol = "BANKNIFTY";
-    this.spotPrice = 56466.55;
-    this.prevClose = 56295.60;
-    this.dayHigh = 56497.70;
-    this.dayLow = 55699.45;
-    this.futuresPrice = 56552.05;
-    this.indiaVix = 11.23;
-    this.vixChange = -0.15;
+    this.spotPrice = 55256.65;
+    this.prevClose = 54515.05;
+    this.dayHigh = 55419.30;
+    this.dayLow = 54617.20;
+    this.futuresPrice = 55340.00;
+    this.indiaVix = 14.38;
+    this.vixChange = +2.61;
     this.lotSize = 30; // Current NSE BankNifty Lot Size (30 qty/lot)
     this._userExplicitlySetContract = false;
 
     // Constituents (Live NSE BankNifty Heavyweights)
     this.constituents = [
-      { symbol: "HDFCBANK", name: "HDFC Bank", weight: "29.1%", weight_num: 0.291, price: 713.85, prev_close: 711.00, chg: 2.85, pct: "+0.40%", points_contrib: "+66.7 pts" },
-      { symbol: "ICICIBANK", name: "ICICI Bank", weight: "23.4%", weight_num: 0.234, price: 1424.30, prev_close: 1443.00, chg: -18.70, pct: "-1.30%", points_contrib: "-174.4 pts" },
-      { symbol: "SBIN", name: "State Bank of India", weight: "11.2%", weight_num: 0.112, price: 1046.40, prev_close: 1042.90, chg: 3.50, pct: "+0.34%", points_contrib: "+21.8 pts" },
-      { symbol: "AXISBANK", name: "Axis Bank", weight: "10.3%", weight_num: 0.103, price: 1260.90, prev_close: 1256.00, chg: 4.90, pct: "+0.39%", points_contrib: "+23.0 pts" },
-      { symbol: "KOTAKBANK", name: "Kotak Mahindra Bank", weight: "9.2%", weight_num: 0.092, price: 423.60, prev_close: 424.20, chg: -0.60, pct: "-0.14%", points_contrib: "-7.4 pts" },
-      { symbol: "INDUSINDBK", name: "IndusInd Bank", weight: "5.5%", weight_num: 0.055, price: 988.00, prev_close: 1002.90, chg: -14.90, pct: "-1.49%", points_contrib: "-47.0 pts" },
-      { symbol: "FEDERALBNK", name: "Federal Bank", weight: "4.3%", weight_num: 0.043, price: 343.10, prev_close: 344.80, chg: -1.70, pct: "-0.49%", points_contrib: "-12.1 pts" },
-      { symbol: "PNB", name: "Punjab National Bank", weight: "2.8%", weight_num: 0.028, price: 115.13, prev_close: 115.40, chg: -0.27, pct: "-0.23%", points_contrib: "-3.7 pts" }
+      { symbol: "HDFCBANK", name: "HDFC Bank", weight: "29.1%", weight_num: 0.291, price: 707.25, prev_close: 692.25, chg: 15.00, pct: "+2.17%", points_contrib: "+348.9 pts" },
+      { symbol: "ICICIBANK", name: "ICICI Bank", weight: "23.4%", weight_num: 0.234, price: 1355.00, prev_close: 1349.00, chg: 6.00, pct: "+0.44%", points_contrib: "+56.9 pts" },
+      { symbol: "SBIN", name: "State Bank of India", weight: "11.2%", weight_num: 0.112, price: 959.10, prev_close: 940.00, chg: 19.10, pct: "+2.03%", points_contrib: "+125.6 pts" },
+      { symbol: "AXISBANK", name: "Axis Bank", weight: "10.3%", weight_num: 0.103, price: 1259.10, prev_close: 1245.00, chg: 14.10, pct: "+1.13%", points_contrib: "+64.3 pts" },
+      { symbol: "KOTAKBANK", name: "Kotak Mahindra Bank", weight: "9.2%", weight_num: 0.092, price: 441.00, prev_close: 435.00, chg: 6.00, pct: "+1.38%", points_contrib: "+70.2 pts" },
+      { symbol: "INDUSINDBK", name: "IndusInd Bank", weight: "5.5%", weight_num: 0.055, price: 861.65, prev_close: 864.00, chg: -2.35, pct: "-0.27%", points_contrib: "-8.2 pts" },
+      { symbol: "FEDERALBNK", name: "Federal Bank", weight: "4.3%", weight_num: 0.043, price: 330.00, prev_close: 321.00, chg: 9.00, pct: "+2.80%", points_contrib: "+66.5 pts" },
+      { symbol: "PNB", name: "Punjab National Bank", weight: "2.8%", weight_num: 0.028, price: 116.98, prev_close: 115.29, chg: 1.69, pct: "+1.47%", points_contrib: "+22.7 pts" }
     ];
 
     // Expiry Management Engine (Automated Rolling Expiries)
@@ -35,8 +35,8 @@ class AppState {
     this.selectedExpiry = this.availableExpiries[0];
 
     // Active Instrument & Timeframe
-    this.activeInstrument = "CUSTOM_56300_PE";
-    this.selectedStrike = 56300;
+    this.activeInstrument = "CUSTOM_55300_PE";
+    this.selectedStrike = 55300;
     this.selectedOptionType = "PE";
     this.currentTimeframe = "5m"; // "5m", "10m", "15m", "30m"
     
@@ -207,42 +207,111 @@ class AppState {
     const monthNames = ["", "JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
     const fullMonths = ["", "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
-    const istOffset = 5.5 * 60 * 60 * 1000;
+    // Work in IST
+    const istOffset = 5.5 * 3600 * 1000;
     const istTime = new Date(baseDate.getTime() + istOffset);
+    const curY = istTime.getUTCFullYear();
+    const curM = istTime.getUTCMonth() + 1;
+    const curD = istTime.getUTCDate();
+    const curH = istTime.getUTCHours() + istTime.getUTCMinutes() / 60;
+    const todayKey = `${curY}-${String(curM).padStart(2, '0')}-${String(curD).padStart(2, '0')}`;
 
     const expiries = [];
     const seen = new Set();
 
-    const getLastWednesday = (y, m) => {
+    // Helper to find last Wednesday of month
+    const getLastWedOfMonth = (y, m) => {
       let nextM = m === 12 ? 1 : m + 1;
       let nextY = m === 12 ? y + 1 : y;
       const firstOfNext = new Date(Date.UTC(nextY, nextM - 1, 1));
-      const lastDay = new Date(firstOfNext.getTime() - 24 * 60 * 60 * 1000);
-      const dayOfWeek = lastDay.getUTCDay(); // 0 = Sun, ..., 3 = Wed
+      const lastDay = new Date(firstOfNext.getTime() - 24 * 3600 * 1000);
+      const dayOfWeek = lastDay.getUTCDay(); // 3 = Wed
       const offset = (dayOfWeek - 3 + 7) % 7;
-      const lastWed = new Date(lastDay.getTime() - offset * 24 * 60 * 60 * 1000);
-      return lastWed;
+      return new Date(lastDay.getTime() - offset * 24 * 3600 * 1000);
     };
 
-    // Generate next 8 Monthly Expiries (Rolling monthly expiries as per NSE derivative contract rules)
-    const startY = istTime.getUTCFullYear();
-    const startM = istTime.getUTCMonth() + 1;
-    const todayKey = `${istTime.getUTCFullYear()}-${String(istTime.getUTCMonth() + 1).padStart(2, '0')}-${String(istTime.getUTCDate()).padStart(2, '0')}`;
+    // 1. Identify Active Monthly Expiry (Primary NSE BankNifty derivatives contract traded on Zerodha Kite)
+    let activeMonthlyWed = getLastWedOfMonth(curY, curM);
+    let activeMonthlyD = activeMonthlyWed.getUTCDate();
+    let activeMonthlyKey = `${curY}-${String(curM).padStart(2, '0')}-${String(activeMonthlyD).padStart(2, '0')}`;
 
-    for (let off = 0; off < 8; off++) {
-      const targetM = ((startM - 1 + off) % 12) + 1;
-      const targetY = startY + Math.floor((startM - 1 + off) / 12);
+    // If today is past current month's monthly expiry 15:30 IST, roll to next month's monthly expiry
+    if (activeMonthlyKey < todayKey || (activeMonthlyKey === todayKey && curH >= 15.5)) {
+      const nextM = curM === 12 ? 1 : curM + 1;
+      const nextY = curM === 12 ? curY + 1 : curY;
+      activeMonthlyWed = getLastWedOfMonth(nextY, nextM);
+      activeMonthlyD = activeMonthlyWed.getUTCDate();
+      activeMonthlyKey = `${nextY}-${String(nextM).padStart(2, '0')}-${String(activeMonthlyD).padStart(2, '0')}`;
+    }
 
-      const lastWed = getLastWednesday(targetY, targetM);
+    const mY = activeMonthlyWed.getUTCFullYear();
+    const mM = activeMonthlyWed.getUTCMonth() + 1;
+    const mD = activeMonthlyWed.getUTCDate();
+    const mDStr = String(mD).padStart(2, '0');
+    const mCode = `${mDStr}${monthNames[mM]}`;
+
+    // Active Monthly Expiry is #1 (DEFAULT / Zerodha Parity)
+    seen.add(activeMonthlyKey);
+    expiries.push({
+      key: activeMonthlyKey,
+      code: mCode,
+      label: `${mDStr} ${monthNames[mM]} ${mY} (Monthly - Active Zerodha)`,
+      shortLabel: `${mCode} Monthly (Zerodha)`,
+      month: mM,
+      year: mY,
+      isMonthly: true,
+      isWeekly: false,
+      isCurrent: true
+    });
+
+    // 2. Add Weekly Expiries (Wednesdays) for scalpers wanting weekly / 0-DTE contracts
+    let curDayOfWeek = istTime.getUTCDay();
+    let daysToNextWed = (3 - curDayOfWeek + 7) % 7;
+    if (curDayOfWeek === 3 && curH >= 15.5) {
+      daysToNextWed = 7;
+    }
+
+    for (let w = 0; w < 4; w++) {
+      const wedDate = new Date(istTime.getTime() + (daysToNextWed + w * 7) * 24 * 3600 * 1000);
+      const y = wedDate.getUTCFullYear();
+      const m = wedDate.getUTCMonth() + 1;
+      const d = wedDate.getUTCDate();
+      const dStr = String(d).padStart(2, '0');
+      const key = `${y}-${String(m).padStart(2, '0')}-${dStr}`;
+      const code = `${dStr}${monthNames[m]}`;
+
+      if (!seen.has(key)) {
+        seen.add(key);
+        const isToday = (key === todayKey);
+        let label = isToday
+          ? `${dStr} ${monthNames[m]} ${y} (0-DTE Weekly - Expiring Today)`
+          : `${dStr} ${monthNames[m]} ${y} (Weekly)`;
+
+        expiries.push({
+          key: key,
+          code: code,
+          label: label,
+          shortLabel: isToday ? `${code} (0-DTE)` : `${code} Weekly`,
+          month: m,
+          year: y,
+          isMonthly: false,
+          isWeekly: true,
+          isCurrent: false
+        });
+      }
+    }
+
+    // 3. Add subsequent Monthly Expiries for next 5 months
+    for (let off = 1; off <= 5; off++) {
+      const targetM = ((curM - 1 + off) % 12) + 1;
+      const targetY = curY + Math.floor((curM - 1 + off) / 12);
+      const lastWed = getLastWedOfMonth(targetY, targetM);
       const y = lastWed.getUTCFullYear();
       const m = lastWed.getUTCMonth() + 1;
       const d = lastWed.getUTCDate();
       const dStr = String(d).padStart(2, '0');
       const key = `${y}-${String(m).padStart(2, '0')}-${dStr}`;
       const code = `${dStr}${monthNames[m]}`;
-
-      // Check if last Wednesday is in the past
-      if (key < todayKey) continue;
 
       if (!seen.has(key)) {
         seen.add(key);
@@ -255,7 +324,7 @@ class AppState {
           year: y,
           isMonthly: true,
           isWeekly: false,
-          isCurrent: expiries.length === 0
+          isCurrent: false
         });
       }
     }
@@ -358,9 +427,6 @@ class AppState {
 
   getDaysToExpiry() {
     const now = new Date();
-    const istOffset = 5.5 * 60 * 60 * 1000;
-    const istTime = new Date(now.getTime() + istOffset);
-
     if (!this.selectedExpiry || !this.selectedExpiry.key) {
       if (!this.availableExpiries || this.availableExpiries.length === 0) {
         this.availableExpiries = this.generateRollingExpiries();
@@ -370,42 +436,42 @@ class AppState {
 
     const expKey = this.selectedExpiry.key; // "YYYY-MM-DD"
     const [expY, expM, expD] = expKey.split('-').map(Number);
-    const expDate = new Date(Date.UTC(expY, expM - 1, expD, 10, 0, 0)); // 15:30 IST
-
-    const diffMs = expDate.getTime() - istTime.getTime();
-    const diffDays = diffMs / (1000 * 60 * 60 * 24);
+    // 15:30 IST = 10:00 UTC
+    const expUtcMs = Date.UTC(expY, expM - 1, expD, 10, 0, 0);
+    const nowUtcMs = now.getTime();
+    const diffMs = expUtcMs - nowUtcMs;
+    const diffDays = diffMs / (1000 * 3600 * 24);
 
     if (diffDays <= 0.05) {
-      const hours = istTime.getUTCHours() + istTime.getUTCMinutes() / 60;
-      const hoursLeft = Math.max(0, 15.5 - Math.max(9.25, hours));
-      const intradayDte = 0.45 + (hoursLeft / 6.25) * 0.40;
-      return Math.max(0.40, Math.round(intradayDte * 100) / 100);
+      // 0-DTE (Expiry day): calculate hours left until 15:30 IST
+      const hoursLeft = Math.max(0.1, diffMs / (1000 * 3600));
+      return Math.max(0.04, Math.round((hoursLeft / 24) * 100) / 100);
     }
 
-    return Math.max(0.45, Math.round(diffDays * 100) / 100);
+    return Math.max(0.08, Math.round(diffDays * 100) / 100);
   }
 
   calculateBlackScholes(spot, strike, type, daysToExpiry = null, iv = null) {
     const dte = (daysToExpiry !== null && daysToExpiry !== undefined) ? daysToExpiry : this.getDaysToExpiry();
-    const T = Math.max(0.0012, dte / 365.0);
-    const baseIv = iv || this.indiaVix || 11.23;
+    const T = Math.max(0.0005, dte / 365.0);
+    // BankNifty option IV trades at ~1.31x beta to India VIX (typically ~14.5% - 16.5%)
+    const rawVix = parseFloat(this.indiaVix) || 11.23;
+    const bankniftyIv = Math.max(14.5, rawVix * 1.31);
+    const baseIv = (iv !== null && iv !== undefined) ? parseFloat(iv) : bankniftyIv;
     const optType = (type || 'CE').toString().trim().toUpperCase();
-    const strikeNum = parseFloat(strike) || 56300;
-    const spotNum = parseFloat(spot) || 56466;
+    const strikeNum = parseFloat(strike) || 55000;
+    const spotNum = parseFloat(spot) || (this.spotPrice || 55050);
 
-    // Calibrated NSE Volatility Smile / Skew (Matches Zerodha live options ticks)
-    const moneyness = (strikeNum - spotNum) / (spotNum || 56466);
+    // Realistic NSE Volatility Smile / Skew (Matches Zerodha live options ticks)
+    const m = Math.log(strikeNum / spotNum);
     let skewIv = baseIv;
-    if (moneyness < 0) {
-      // OTM Puts / ITM Calls
-      skewIv = baseIv + Math.abs(moneyness) * 20.0;
+    if (optType === 'PE') {
+      skewIv = baseIv + Math.max(-2, Math.min(6, -m * 8.0));
     } else {
-      // OTM Calls / ITM Puts
-      skewIv = baseIv + moneyness * 15.0;
+      skewIv = baseIv + Math.max(-2, Math.min(5, m * 6.0));
     }
-
-    const r = dte > 7 ? 0.058 : 0.0; // 5.8% RBI forward repo rate on monthly derivatives, 0 on near weekly
-    const sigma = Math.max(0.05, skewIv / 100.0);
+    const sigma = Math.max(0.06, skewIv / 100.0);
+    const r = 0.065; // 6.5% RBI risk-free rate
 
     const d1 = (Math.log(spotNum / strikeNum) + (r + 0.5 * sigma * sigma) * T) / (sigma * Math.sqrt(T));
     const d2 = d1 - sigma * Math.sqrt(T);
@@ -421,13 +487,8 @@ class AppState {
       return sign === -1 ? 1.0 - cdf : cdf;
     };
 
-    const Nd1 = cnd(d1);
-    const Nd2 = cnd(d2);
-    const N_minus_d1 = cnd(-d1);
-    const N_minus_d2 = cnd(-d2);
-
-    const callPrice = spotNum * Nd1 - strikeNum * Math.exp(-r * T) * Nd2;
-    const putPrice = strikeNum * Math.exp(-r * T) * N_minus_d2 - spotNum * N_minus_d1;
+    const callPrice = spotNum * cnd(d1) - strikeNum * Math.exp(-r * T) * cnd(d2);
+    const putPrice = strikeNum * Math.exp(-r * T) * cnd(-d2) - spotNum * cnd(-d1);
 
     if (optType === 'PE') {
       const intrinsic = Math.max(0.0, strikeNum - spotNum);
@@ -451,7 +512,8 @@ class AppState {
     if (!spotCandles5m || spotCandles5m.length === 0) return;
 
     this.candles[instKey] = { "1m": [], "5m": [], "10m": [], "15m": [], "30m": [] };
-    const iv = this.indiaVix || 12.29;
+    const rawVix = parseFloat(this.indiaVix) || 11.23;
+    const iv = Math.max(14.5, rawVix * 1.31);
     const dte = this.getDaysToExpiry();
 
     const opt5m = [];
@@ -822,35 +884,27 @@ class AppState {
     }
 
     const spotObj = typeof data.spot === 'object' ? data.spot : { price: data.spot };
-    const incomingPrice = spotObj.price;
+    const incomingPrice = parseFloat(spotObj.price);
 
-    // Anti-Spike Safeguard: only active AFTER initial real feed sync has completed
-    if (this._hasSyncedRealFeed && this.spotPrice && incomingPrice && Math.abs(incomingPrice - this.spotPrice) > 300) {
-      console.warn(`⚠️ Filtered out spot price spike: previous ₹${this.spotPrice} -> incoming ₹${incomingPrice}`);
+    // Reject only corrupted or invalid non-numeric prices
+    if (!incomingPrice || isNaN(incomingPrice) || incomingPrice < 25000 || incomingPrice > 95000) {
+      console.warn(`⚠️ Rejected out-of-bounds spot price: ${spotObj.price}`);
       return;
     }
+
+    // Always accept the real market spot price!
+    this.spotPrice = incomingPrice;
     this._hasSyncedRealFeed = true;
 
-    // Candle History Protection: if we have deep historical candles (>100 bars), reject sudden truncated fallback sets (<80 bars)
-    const activeCandles5m = (data.candles_5m && data.candles_5m.length > 0) 
-      ? data.candles_5m 
-      : ((data.candles_5m_today && data.candles_5m_today.length > 0) ? data.candles_5m_today : []);
-    const prev5m = this.candles["BANKNIFTY_SPOT"]["5m"];
-    if (prev5m && prev5m.length > 100 && activeCandles5m.length > 0 && activeCandles5m.length < 80) {
-      console.warn("⚠️ Retaining full historical 5m candles, ignoring truncated payload");
-      return;
-    }
-
-    this.spotPrice = incomingPrice || this.spotPrice || 57800;
     this.futuresPrice = spotObj.futures || this.futuresPrice || (this.spotPrice + 85.5);
-    this.dayHigh = spotObj.high || this.dayHigh || (this.spotPrice + 120);
-    this.dayLow = spotObj.low || this.dayLow || (this.spotPrice - 120);
+    this.dayHigh = spotObj.high ? Math.max(spotObj.high, this.spotPrice) : (this.dayHigh || this.spotPrice + 120);
+    this.dayLow = spotObj.low ? Math.min(spotObj.low, this.spotPrice) : (this.dayLow || this.spotPrice - 120);
     if (spotObj.prev_close) {
-      this.prevClose = spotObj.prev_close;
+      this.prevClose = parseFloat(spotObj.prev_close);
     } else if (spotObj.change !== undefined) {
-      this.prevClose = spotObj.price - spotObj.change;
+      this.prevClose = this.spotPrice - parseFloat(spotObj.change);
     } else if (!this.prevClose) {
-      this.prevClose = this.spotPrice - 233.50;
+      this.prevClose = this.spotPrice - 60.0;
     }
     if (data.vix) {
       this.indiaVix = typeof data.vix === 'object' ? (data.vix.price || this.indiaVix) : data.vix;
@@ -860,21 +914,24 @@ class AppState {
       this.constituents = data.constituents;
     }
 
-    if (activeCandles5m.length > 0) {
-      // Preserve live accumulation on the active current candle
-      if (prev5m && prev5m.length > 0) {
-        const lastOld = prev5m[prev5m.length - 1];
-        const lastNew = activeCandles5m[activeCandles5m.length - 1];
-        if (lastOld && lastNew && lastOld.time === lastNew.time && lastOld.volume > lastNew.volume) {
-          lastNew.volume = lastOld.volume;
-        }
-      }
+    const activeCandles5m = (data.candles_5m && data.candles_5m.length > 0) 
+      ? data.candles_5m 
+      : ((data.candles_5m_today && data.candles_5m_today.length > 0) ? data.candles_5m_today : []);
 
-      this.candles["BANKNIFTY_SPOT"]["5m"] = activeCandles5m;
-      this.candles["BANKNIFTY_SPOT"]["10m"] = aggregateCandles(activeCandles5m, 2);
-      this.candles["BANKNIFTY_SPOT"]["15m"] = aggregateCandles(activeCandles5m, 3);
-      this.candles["BANKNIFTY_SPOT"]["30m"] = aggregateCandles(activeCandles5m, 6);
-      this.candles["BANKNIFTY_SPOT"]["5m_history"] = data.candles_5m || [];
+    if (activeCandles5m.length > 0) {
+      const prev5m = this.candles["BANKNIFTY_SPOT"]["5m"];
+      if (prev5m && prev5m.length > 50 && activeCandles5m.length < 80) {
+        // Merge today's active candles without losing deep historical bars
+        const todayDate = activeCandles5m[0].date;
+        const nonTodayBars = prev5m.filter(c => c.date !== todayDate);
+        this.candles["BANKNIFTY_SPOT"]["5m"] = [...nonTodayBars, ...activeCandles5m];
+      } else {
+        this.candles["BANKNIFTY_SPOT"]["5m"] = activeCandles5m;
+      }
+      this.candles["BANKNIFTY_SPOT"]["10m"] = aggregateCandles(this.candles["BANKNIFTY_SPOT"]["5m"], 2);
+      this.candles["BANKNIFTY_SPOT"]["15m"] = aggregateCandles(this.candles["BANKNIFTY_SPOT"]["5m"], 3);
+      this.candles["BANKNIFTY_SPOT"]["30m"] = aggregateCandles(this.candles["BANKNIFTY_SPOT"]["5m"], 6);
+      this.candles["BANKNIFTY_SPOT"]["5m_history"] = this.candles["BANKNIFTY_SPOT"]["5m"];
 
       // Resample 1m candles around live spot prices
       const base1m = [];
@@ -924,8 +981,8 @@ class AppState {
     }
 
     const atmStrike = Math.round(this.spotPrice / 100) * 100;
-    if (!this._userExplicitlySetContract && (!this.selectedStrike || Math.abs(this.selectedStrike - atmStrike) > 2500)) {
-      this.selectedStrike = 56300; // Calibrated to 56300 PE requested by user
+    if (!this._userExplicitlySetContract && !this.selectedStrike) {
+      this.selectedStrike = atmStrike;
     }
 
     // Maintain background custom option calculations for the selected strike

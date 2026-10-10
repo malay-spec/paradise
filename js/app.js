@@ -2077,7 +2077,12 @@ class Application {
   }
 
   fetchLiveMarketData() {
-    const urlsToTry = ['/api/market/live', 'http://localhost:8080/api/market/live', 'http://127.0.0.1:8080/api/market/live'];
+    const urlsToTry = [
+      '/api/market/live',
+      'http://localhost:8080/api/market/live',
+      './data/market_snapshot.json',
+      'data/market_snapshot.json'
+    ];
     const tryFetch = (index = 0) => {
       if (index >= urlsToTry.length) return Promise.reject(new Error("All endpoints failed"));
       return fetch(urlsToTry[index])
