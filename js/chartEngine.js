@@ -108,6 +108,79 @@ class ChartEngine {
         this.zoomOut(zoomFactor);
       }
     }, { passive: false });
+
+    // Touch Events for Mobile (Single-finger pan & inspect, Two-finger pinch-to-zoom)
+    let touchStartX = 0;
+    let initialTouchOffset = 0;
+    let initialPinchDist = 0;
+    let initialVisibleCount = 0;
+
+    this.canvas.addEventListener('touchstart', (e) => {
+      if (e.touches.length === 1) {
+        const touch = e.touches[0];
+        const rect = this.canvas.getBoundingClientRect();
+        this.mouseX = touch.clientX - rect.left;
+        this.mouseY = touch.clientY - rect.top;
+        this.isHovering = true;
+        touchStartX = touch.clientX;
+        initialTouchOffset = this.offset;
+        this.render();
+        this.updateLegendFromMouse();
+      } else if (e.touches.length === 2) {
+        initialPinchDist = Math.hypot(
+          e.touches[0].clientX - e.touches[1].clientX,
+          e.touches[0].clientY - e.touches[1].clientY
+        );
+        initialVisibleCount = this.visibleCount;
+      }
+    }, { passive: true });
+
+    this.canvas.addEventListener('touchmove', (e) => {
+      if (e.touches.length === 1) {
+        const touch = e.touches[0];
+        const rect = this.canvas.getBoundingClientRect();
+        this.mouseX = touch.clientX - rect.left;
+        this.mouseY = touch.clientY - rect.top;
+        this.isHovering = true;
+
+        const dx = touch.clientX - touchStartX;
+        const count = Math.max(1, Math.min(this.candles.length, this.visibleCount));
+        const candleW = (this.width - 70) / count;
+        const shift = Math.round(dx / candleW);
+        const maxOffset = Math.max(0, this.candles.length - this.visibleCount);
+        this.offset = Math.max(0, Math.min(maxOffset, initialTouchOffset - shift));
+
+        this.render();
+        this.updateLegendFromMouse();
+      } else if (e.touches.length === 2) {
+        const dist = Math.hypot(
+          e.touches[0].clientX - e.touches[1].clientX,
+          e.touches[0].clientY - e.touches[1].clientY
+        );
+        if (initialPinchDist > 0 && dist > 10) {
+          const ratio = initialPinchDist / dist;
+          const target = Math.max(8, Math.min(this.candles.length || 100, Math.round(initialVisibleCount * ratio)));
+          if (target !== this.visibleCount) {
+            this.visibleCount = target;
+            const maxOffset = Math.max(0, this.candles.length - this.visibleCount);
+            this.offset = Math.max(0, Math.min(maxOffset, this.offset));
+            this.render();
+          }
+        }
+      }
+    }, { passive: true });
+
+    this.canvas.addEventListener('touchend', (e) => {
+      if (e.touches.length === 0) {
+        setTimeout(() => {
+          this.isHovering = false;
+          this.mouseX = -1;
+          this.mouseY = -1;
+          this.render();
+          this.resetLegendToLatest(true);
+        }, 1200);
+      }
+    }, { passive: true });
   }
 
   zoomIn(factor = 1.25) {
@@ -189,8 +262,9 @@ class ChartEngine {
     this.timeframe = timeframe;
 
     if (isTfChange || !this.visibleCount) {
+      const isMobile = (this.width && this.width < 800) || (window.innerWidth <= 800);
       if (this.timeframe === '1d') {
-        this.visibleCount = Math.min(this.candles.length || 100, 100);
+        this.visibleCount = isMobile ? Math.min(this.candles.length || 35, 35) : Math.min(this.candles.length || 100, 100);
       } else {
         const latestDate = this.candles[this.candles.length - 1]?.date;
         let todayCount = 0;
@@ -200,8 +274,10 @@ class ChartEngine {
             else break;
           }
         }
-        const defaultCounts = { '1m': 60, '5m': 45, '10m': 40, '15m': 35, '30m': 30 };
-        const fallbackTarget = defaultCounts[this.timeframe] || 45;
+        const defaultCounts = isMobile 
+          ? { '1m': 35, '5m': 30, '10m': 28, '15m': 25, '30m': 22 }
+          : { '1m': 60, '5m': 45, '10m': 40, '15m': 35, '30m': 30 };
+        const fallbackTarget = defaultCounts[this.timeframe] || (isMobile ? 30 : 45);
         const target = todayCount >= 8 ? Math.max(todayCount, fallbackTarget) : fallbackTarget;
         this.visibleCount = Math.min(this.candles.length || target, target);
       }
@@ -400,13 +476,14 @@ class ChartEngine {
 
     if (this.candles.length === 0) return;
 
-    // Subdivide main chart area, RSI sub-pane, and Volume sub-pane
-    const priceScaleWidth = 70;
-    const timeScaleHeight = 34;
+    // Responsive Subdivide main chart area, RSI sub-pane, and Volume sub-pane
+    const isMobileLandscape = h < 380;
+    const priceScaleWidth = (w < 600 || isMobileLandscape) ? 58 : 70;
+    const timeScaleHeight = isMobileLandscape ? 20 : 34;
     this.timeScaleHeight = timeScaleHeight;
-    const rsiPaneHeight = window.appState.indicators.rsi ? 65 : 0;
-    const volumePaneHeight = (window.appState.indicators.volume !== false) ? 55 : 0;
-    const mainChartHeight = h - timeScaleHeight - rsiPaneHeight - volumePaneHeight;
+    const rsiPaneHeight = window.appState.indicators.rsi ? (isMobileLandscape ? 32 : 65) : 0;
+    const volumePaneHeight = (window.appState.indicators.volume !== false) ? (isMobileLandscape ? 24 : 55) : 0;
+    const mainChartHeight = Math.max(80, h - timeScaleHeight - rsiPaneHeight - volumePaneHeight);
     const chartWidth = w - priceScaleWidth;
 
     const maxOffset = Math.max(0, this.candles.length - 1);
@@ -486,11 +563,11 @@ class ChartEngine {
       return mainChartHeight - ((val - adjustedMin) / adjustedRange) * mainChartHeight;
     };
 
-    // Right-side margin: provides 5 blank candle slots so the live forming candle has ample breathing room
-    const rightMarginBars = (this.offset === 0) ? 5 : 2;
+    // Right-side margin: provides 4 blank candle slots so the live forming candle has ample breathing room
+    const rightMarginBars = (this.offset === 0) ? 4 : 2;
     const totalSlots = count + rightMarginBars;
     const candleWidth = chartWidth / totalSlots;
-    const bodyWidth = Math.max(4, Math.min(26, candleWidth * 0.70));
+    const bodyWidth = Math.max(6, Math.min(26, candleWidth * 0.70));
 
     // Draw Background Grid Lines
     this.drawGrid(chartWidth, mainChartHeight, priceScaleWidth, adjustedMin, adjustedMax, adjustedRange, isLight);
@@ -1390,6 +1467,22 @@ class ChartEngine {
     const dtLabel = this.timeframe === '1d' 
       ? `📅 ${c.date || c.time} (Daily Session)` 
       : `📅 ${c.date || ''}  ⏰ ${c.time || ''} IST`;
+
+    const isMobile = window.innerWidth <= 960 || (this.height && this.height < 400);
+    if (isMobile) {
+      el.innerHTML = `
+        <span class="legend-symbol" style="color: var(--cyan-primary); font-weight: 800;">${instMeta.name} [${this.timeframe}]</span>
+        <span class="legend-datetime" style="color: #FDE047; font-weight: 700; margin: 0 4px; font-size: 0.88em;">${dtLabel}</span>
+        <span class="legend-ohlc">
+          O:<b class="legend-val" style="color: #E2E8F0;">${formattedOpen}</b>
+          H:<b class="legend-val" style="color: #34D399;">${formattedHigh}</b>
+          L:<b class="legend-val" style="color: #F87171;">${formattedLow}</b>
+          C:<b class="legend-val ${chgClass}; font-weight: 800;">${formattedClose}</b>
+          <b class="legend-val ${chgClass}" style="font-size: 0.90em;">(${sign}${changePct.toFixed(2)}%)</b>
+        </span>
+      `;
+      return;
+    }
 
     el.innerHTML = `
       <span class="legend-symbol" style="color: var(--cyan-primary); font-weight: 800;">${instMeta.name} [${this.timeframe}]</span>

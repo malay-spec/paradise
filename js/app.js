@@ -54,6 +54,10 @@ class Application {
       setTimeout(() => { if (this.chartEngine) this.chartEngine.resize(); }, 250);
       setTimeout(() => { if (this.chartEngine) this.chartEngine.resize(); }, 600);
       window.addEventListener('load', () => { if (this.chartEngine) this.chartEngine.resize(); });
+      const legEl = document.getElementById('chart-legend-content');
+      if (legEl) {
+        legEl.addEventListener('click', () => legEl.classList.toggle('legend-minimized'));
+      }
     } catch (e) { console.error("ChartEngine init error:", e); }
 
     // Initial Renders

@@ -17,10 +17,10 @@
   <link rel="apple-touch-icon" href="assets/icon-192.png">
 
   <!-- CSS Stylesheets -->
-  <link rel="stylesheet" href="css/main.css?v=2.9.6">
-  <link rel="stylesheet" href="css/terminal.css?v=2.9.6">
-  <link rel="stylesheet" href="css/strategies.css?v=2.9.6">
-  <link rel="stylesheet" href="css/optionchain.css?v=2.9.6">
+  <link rel="stylesheet" href="css/main.css?v=2.9.7">
+  <link rel="stylesheet" href="css/terminal.css?v=2.9.7">
+  <link rel="stylesheet" href="css/strategies.css?v=2.9.7">
+  <link rel="stylesheet" href="css/optionchain.css?v=2.9.7">
 
   <!-- TradingView Official Library -->
   <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
@@ -31,7 +31,7 @@
   <div id="pwa-update-banner" style="display: none; position: fixed; top: 0; left: 0; right: 0; z-index: 99999; background: linear-gradient(90deg, #059669 0%, #0284C7 100%); color: #FFF; padding: 7px 16px; font-family: var(--font-mono); font-size: 0.78rem; font-weight: 700; box-shadow: 0 4px 16px rgba(0,0,0,0.4); align-items: center; justify-content: space-between;">
     <div style="display: flex; align-items: center; gap: 8px;">
       <span>⚡</span>
-      <span>A fresh update for BankNifty AlgoEdge Terminal (v2.9.6) is ready!</span>
+      <span>A fresh update for BankNifty AlgoEdge Terminal (v2.9.7) is ready!</span>
     </div>
     <div style="display: flex; gap: 8px;">
       <button id="btn-update-reload" class="btn btn-sm" style="background: #FFF; color: #065F46; font-weight: 800; padding: 3px 12px; font-size: 0.74rem; border-radius: 4px; border: none; cursor: pointer;">Apply &amp; Reload Now</button>
@@ -1412,24 +1412,24 @@ class BankNiftyCustomScalper(Strategy):
   </div>
 
   <!-- External JS Scripts (Versioned to bust browser and Service Worker caches) -->
-  <script src="js/audioEffects.js?v=2.9.6"></script>
-  <script src="js/state.js?v=2.9.6"></script>
-  <script src="js/candleStructure.js?v=2.9.6"></script>
-  <script src="js/chartEngine.js?v=2.9.6"></script>
-  <script src="js/strikeAdvisor.js?v=2.9.6"></script>
-  <script src="js/optionChain.js?v=2.9.6"></script>
-  <script src="js/paperBroker.js?v=2.9.6"></script>
-  <script src="js/strategyEngine.js?v=2.9.6"></script>
-  <script src="js/backtestEngine.js?v=2.9.6"></script>
-  <script src="js/brokerBridge.js?v=2.9.6"></script>
-  <script src="js/app.js?v=2.9.6"></script>
-  <script src="js/websocketClient.js?v=2.9.6"></script>
+  <script src="js/audioEffects.js?v=2.9.7"></script>
+  <script src="js/state.js?v=2.9.7"></script>
+  <script src="js/candleStructure.js?v=2.9.7"></script>
+  <script src="js/chartEngine.js?v=2.9.7"></script>
+  <script src="js/strikeAdvisor.js?v=2.9.7"></script>
+  <script src="js/optionChain.js?v=2.9.7"></script>
+  <script src="js/paperBroker.js?v=2.9.7"></script>
+  <script src="js/strategyEngine.js?v=2.9.7"></script>
+  <script src="js/backtestEngine.js?v=2.9.7"></script>
+  <script src="js/brokerBridge.js?v=2.9.7"></script>
+  <script src="js/app.js?v=2.9.7"></script>
+  <script src="js/websocketClient.js?v=2.9.7"></script>
 
   <!-- PWA Service Worker Registration, Auto-Update & Cache Purge -->
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js?v=2.9.6')
+        navigator.serviceWorker.register('./sw.js?v=2.9.7')
           .then(reg => {
             console.log('⚡ PWA Service Worker Registered:', reg.scope);
             reg.update();
@@ -1453,7 +1453,7 @@ class BankNiftyCustomScalper(Strategy):
         if (window.caches) {
           caches.keys().then(keys => {
             keys.forEach(k => {
-              if (k !== 'banknifty-algoedge-v2.9.6') {
+              if (k !== 'banknifty-algoedge-v2.9.7') {
                 caches.delete(k);
               }
             });

@@ -1916,6 +1916,81 @@
     padding: 6px 8px !important;
   }
 
+  /* Mobile Ultra-Compact Candlestick Chart Legend (Single-line strip, never covers candles) */
+  .chart-legend-overlay {
+    top: 4px !important;
+    left: 6px !important;
+    right: auto !important;
+    max-width: calc(100% - 75px) !important;
+    max-height: 24px !important;
+    height: 24px !important;
+    background: rgba(7, 11, 19, 0.78) !important;
+    backdrop-filter: blur(6px) !important;
+    border: 1px solid rgba(0, 240, 255, 0.25) !important;
+    border-radius: 4px !important;
+    padding: 1px 8px !important;
+    font-size: 0.60rem !important;
+    display: flex !important;
+    align-items: center !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    -webkit-overflow-scrolling: touch;
+    white-space: nowrap !important;
+    gap: 6px !important;
+    z-index: 20 !important;
+    pointer-events: auto !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35) !important;
+  }
+
+  .chart-legend-overlay::-webkit-scrollbar {
+    display: none;
+  }
+
+  .chart-legend-overlay .legend-symbol {
+    font-size: 0.64rem !important;
+    font-weight: 800 !important;
+    flex-shrink: 0 !important;
+  }
+
+  .chart-legend-overlay .legend-datetime {
+    font-size: 0.58rem !important;
+    margin: 0 4px !important;
+    flex-shrink: 0 !important;
+  }
+
+  .chart-legend-overlay .legend-ohlc {
+    display: inline-flex !important;
+    flex-wrap: nowrap !important;
+    align-items: center !important;
+    gap: 6px !important;
+    font-size: 0.60rem !important;
+    flex-shrink: 0 !important;
+  }
+
+  .chart-legend-overlay .legend-struct-badge {
+    display: none !important;
+  }
+
+  .chart-legend-overlay.legend-minimized {
+    width: 28px !important;
+    max-width: 28px !important;
+    height: 22px !important;
+    padding: 0 !important;
+    justify-content: center !important;
+    cursor: pointer !important;
+    overflow: hidden !important;
+  }
+
+  .chart-legend-overlay.legend-minimized::after {
+    content: '📊';
+    font-size: 13px;
+  }
+
+  .chart-legend-overlay.legend-minimized * {
+    display: none !important;
+  }
+
   /* Mobile View Switcher: Chart vs AI Radar inside Live Terminal */
   #tab-terminal.mobile-view-radar .chart-panel-area,
   #tab-terminal.mobile-view-radar .bottom-trade-area {
@@ -2130,6 +2205,11 @@
    LANDSCAPE VIEWPORT SYSTEM (Widescreen Mobile Trading Mode)
    ========================================================================== */
 @media (orientation: landscape) and (max-height: 600px), (max-width: 960px) and (orientation: landscape) {
+  /* Hide Ticker Tape in Landscape to maximize vertical candlestick space */
+  .ticker-bar {
+    display: none !important;
+  }
+
   /* Ultra-slim header in landscape to maximize vertical chart space */
   .app-header {
     height: 38px !important;
@@ -2150,11 +2230,11 @@
     font-size: 0.78rem !important;
   }
 
-  /* Full Widescreen Chart in Landscape */
+  /* Full Widescreen Chart in Landscape — Maximized for Candlestick Visibility */
   .chart-panel-area {
-    height: calc(100dvh - 84px) !important;
-    height: calc(100vh - 84px) !important;
-    min-height: 240px !important;
+    height: calc(100dvh - 78px) !important;
+    height: calc(100vh - 78px) !important;
+    min-height: 250px !important;
     max-height: none !important;
     display: flex !important;
     flex-direction: column !important;
@@ -2179,16 +2259,22 @@
   }
 
   .chart-toolbar {
-    height: 34px !important;
-    min-height: 34px !important;
-    padding: 0 6px !important;
+    height: 32px !important;
+    min-height: 32px !important;
+    padding: 0 4px !important;
     gap: 4px !important;
   }
 
+  .chart-toolbar select,
+  .chart-toolbar button {
+    font-size: 0.64rem !important;
+    padding: 2px 6px !important;
+  }
+
   .chart-timeline-scrollbar {
-    height: 22px !important;
-    min-height: 22px !important;
-    padding: 0 6px !important;
+    height: 20px !important;
+    min-height: 20px !important;
+    padding: 0 4px !important;
   }
 
   /* Slim 40px Bottom Dock in Landscape */
@@ -2209,6 +2295,14 @@
 
   .mob-nav-btn .mob-nav-label {
     font-size: 0.65rem !important;
+  }
+
+  .mob-nav-badge {
+    position: relative !important;
+    top: auto !important;
+    right: auto !important;
+    margin-left: 2px !important;
+    padding: 1px 4px !important;
   }
 
   .main-content,
