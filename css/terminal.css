@@ -1732,5 +1732,371 @@
   cursor: pointer;
 }
 
+/* ==========================================================================
+   MOBILE & TABLET RESPONSIVE SYSTEM (iOS & Android Phones / PWA)
+   ========================================================================== */
+.mobile-bottom-nav {
+  display: none;
+}
 
+.opt-mobile-filter-bar {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  /* Prevent horizontal screen expansion on phones */
+  html, body, .app-container {
+    max-width: 100vw !important;
+    overflow-x: hidden !important;
+  }
+
+  /* Compact Native Mobile Header */
+  .app-header {
+    height: 52px !important;
+    min-height: 52px !important;
+    padding: 0 12px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    flex-wrap: nowrap !important;
+    background: #090E18 !important;
+    border-bottom: 1px solid var(--border-subtle) !important;
+  }
+
+  .brand-section {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    flex-shrink: 0 !important;
+  }
+
+  .brand-logo {
+    width: 28px !important;
+    height: 28px !important;
+  }
+
+  .brand-info h1 {
+    font-size: 0.92rem !important;
+    margin: 0 !important;
+  }
+
+  .brand-badge,
+  .brand-subtitle,
+  .nav-drawer-trigger-btn .trigger-text-box {
+    display: none !important;
+  }
+
+  .nav-drawer-trigger-btn {
+    padding: 4px 6px !important;
+    background: rgba(15, 23, 42, 0.6) !important;
+  }
+
+  /* Live Spot Price in Header */
+  .header-market-stats {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+  }
+
+  .market-stat-item {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: flex-end !important;
+  }
+
+  .market-stat-item .stat-label {
+    font-size: 0.58rem !important;
+    color: var(--text-muted) !important;
+    letter-spacing: 0.04em !important;
+  }
+
+  .market-stat-item .stat-value {
+    font-size: 0.88rem !important;
+    font-weight: 800 !important;
+    gap: 4px !important;
+  }
+
+  .market-stat-item:nth-child(n+2) {
+    display: none !important;
+  }
+
+  /* Hide Desktop Toolbar Clutter in Header */
+  .header-actions .sim-speed-selector,
+  .header-actions .trading-mode-pill,
+  .header-actions #btn-pwa-install,
+  .header-actions #btn-force-refresh,
+  .header-actions #theme-toggle-btn {
+    display: none !important;
+  }
+
+  .market-status-pill {
+    padding: 3px 8px !important;
+    font-size: 0.65rem !important;
+  }
+
+  /* Compact Stock Ticker Tape on Mobile */
+  .ticker-bar {
+    height: 28px !important;
+    padding: 0 8px !important;
+  }
+
+  .ticker-label {
+    font-size: 0.62rem !important;
+  }
+
+  .ticker-item {
+    font-size: 0.65rem !important;
+    gap: 4px !important;
+  }
+
+  /* Mobile Chart Area */
+  .chart-panel-area {
+    min-height: 340px !important;
+    height: 380px !important;
+    border-radius: var(--radius-md) !important;
+  }
+
+  .chart-toolbar {
+    height: 42px !important;
+    min-height: 42px !important;
+    padding: 0 8px !important;
+    gap: 6px !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .strike-selector-box,
+  .timeframe-group,
+  .indicator-group {
+    flex-shrink: 0 !important;
+  }
+
+  .opt-type-btn,
+  .tf-btn,
+  .ind-toggle-btn {
+    padding: 3px 8px !important;
+    font-size: 0.68rem !important;
+  }
+
+  .chart-timeline-scrollbar {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+    padding: 2px 4px !important;
+  }
+
+  .option-quick-strip {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+    padding: 6px 8px !important;
+  }
+
+  /* Mobile View Switcher: Chart vs AI Radar inside Live Terminal */
+  #tab-terminal.mobile-view-radar .chart-panel-area,
+  #tab-terminal.mobile-view-radar .bottom-trade-area {
+    display: none !important;
+  }
+
+  #tab-terminal.mobile-view-radar .horizontal-radar-panel {
+    display: flex !important;
+  }
+
+  #tab-terminal:not(.mobile-view-radar) .horizontal-radar-panel {
+    display: flex !important;
+  }
+
+  /* Strike Suggestions Cards full width single column */
+  .strike-suggestions-horizontal-grid,
+  .strike-suggestions-wrapper {
+    grid-template-columns: 1fr !important;
+    padding: 8px !important;
+    gap: 12px !important;
+  }
+
+  .strike-sugg-card {
+    padding: 12px !important;
+    border-radius: 10px !important;
+  }
+
+  .sugg-category {
+    font-size: 0.76rem !important;
+  }
+
+  .sugg-strike-title {
+    font-size: 1.05rem !important;
+  }
+
+  .sugg-ltp {
+    font-size: 1.05rem !important;
+  }
+
+  /* Option Chain Mobile Layout & Segmented Filter */
+  .opt-mobile-filter-bar {
+    display: flex !important;
+    gap: 6px !important;
+    padding: 8px 10px !important;
+    background: var(--bg-tertiary) !important;
+    border-bottom: 1px solid var(--border-subtle) !important;
+  }
+
+  .opt-filter-btn {
+    flex: 1 !important;
+    background: rgba(15, 23, 42, 0.7) !important;
+    border: 1px solid var(--border-medium) !important;
+    color: var(--text-secondary) !important;
+    border-radius: 6px !important;
+    padding: 7px 8px !important;
+    font-size: 0.72rem !important;
+    font-weight: 700 !important;
+    cursor: pointer !important;
+    text-align: center !important;
+    transition: all 0.15s ease !important;
+  }
+
+  .opt-filter-btn.active {
+    background: rgba(0, 240, 255, 0.18) !important;
+    border-color: var(--cyan-primary) !important;
+    color: #FFF !important;
+    box-shadow: 0 0 8px rgba(0, 240, 255, 0.25) !important;
+  }
+
+  .option-table-container {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+    border-radius: var(--radius-md) !important;
+  }
+
+  .option-chain-table {
+    font-size: 0.68rem !important;
+    width: 100% !important;
+  }
+
+  .option-chain-table th,
+  .option-chain-table td {
+    padding: 6px 4px !important;
+    white-space: nowrap !important;
+  }
+
+  /* Filter: CE Only on Mobile */
+  .option-chain-table.filter-ce-only .header-put-group,
+  .option-chain-table.filter-ce-only th:nth-child(n+9),
+  .option-chain-table.filter-ce-only td:nth-child(n+9) {
+    display: none !important;
+  }
+
+  /* Filter: PE Only on Mobile */
+  .option-chain-table.filter-pe-only .header-call-group,
+  .option-chain-table.filter-pe-only th:nth-child(-n+7),
+  .option-chain-table.filter-pe-only td:nth-child(-n+7) {
+    display: none !important;
+  }
+
+  /* Modal Dialogs on Mobile */
+  .modal-card {
+    width: 95% !important;
+    max-height: 85vh !important;
+  }
+
+  .modal-body {
+    padding: 14px !important;
+  }
+
+  /* Bottom Trade Area Tables */
+  .trade-table-wrapper {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Hide Desktop Status Footer on Mobile */
+  .app-footer {
+    display: none !important;
+  }
+
+  /* Pad content bottom so bottom nav doesn't cover anything */
+  .main-content,
+  .terminal-grid,
+  .tab-panel {
+    padding-bottom: 68px !important;
+  }
+
+  /* NATIVE MOBILE BOTTOM NAVIGATION DOCK */
+  .mobile-bottom-nav {
+    display: flex !important;
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    height: 56px !important;
+    background: rgba(10, 16, 28, 0.96) !important;
+    backdrop-filter: blur(14px) !important;
+    -webkit-backdrop-filter: blur(14px) !important;
+    border-top: 1px solid rgba(0, 240, 255, 0.2) !important;
+    z-index: 9999 !important;
+    align-items: center !important;
+    justify-content: space-around !important;
+    padding: 0 4px !important;
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.5) !important;
+  }
+
+  .mob-nav-btn {
+    flex: 1 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 3px !important;
+    background: transparent !important;
+    border: none !important;
+    color: var(--text-muted) !important;
+    font-family: var(--font-heading) !important;
+    font-size: 0.65rem !important;
+    font-weight: 600 !important;
+    padding: 6px 0 !important;
+    cursor: pointer !important;
+    position: relative !important;
+    transition: all 0.15s ease !important;
+  }
+
+  .mob-nav-btn .mob-nav-icon {
+    font-size: 1.15rem !important;
+    line-height: 1 !important;
+    transition: transform 0.15s ease !important;
+  }
+
+  .mob-nav-btn.active {
+    color: var(--cyan-primary) !important;
+  }
+
+  .mob-nav-btn.active .mob-nav-icon {
+    transform: scale(1.15) !important;
+  }
+
+  .mob-nav-badge {
+    position: absolute !important;
+    top: 4px !important;
+    right: calc(50% - 16px) !important;
+    background: var(--bull-green) !important;
+    color: #080C14 !important;
+    font-family: var(--font-mono) !important;
+    font-size: 9px !important;
+    font-weight: 800 !important;
+    padding: 1px 4px !important;
+    border-radius: 8px !important;
+    line-height: 1 !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .app-header {
+    padding: 0 10px !important;
+  }
+
+  .brand-info h1 {
+    font-size: 0.85rem !important;
+  }
+
+  .chart-panel-area {
+    min-height: 310px !important;
+    height: 340px !important;
+  }
+}
 

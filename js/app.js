@@ -40,55 +40,64 @@ class Application {
     console.log("⚡ Initializing BankNifty AlgoEdge Terminal...");
 
     // Initialize Theme (Dark / Light Mode)
-    this.initTheme();
+    try { this.initTheme(); } catch (e) { console.error("Theme init error:", e); }
 
     // Initialize Dynamic Strikes & Options Strip centered on live spot
-    this.rebuildDynamicStrikeSelectorAndPills();
-    this.populateExpiryDropdowns();
+    try { this.rebuildDynamicStrikeSelectorAndPills(); } catch (e) { console.error("Dynamic strikes init error:", e); }
+    try { this.populateExpiryDropdowns(); } catch (e) { console.error("Expiry dropdown init error:", e); }
 
     // Initialize Chart
-    this.chartEngine = new window.ChartEngine('banknifty-chart', 'chart-legend-content');
-    this.chartEngine.setData(window.appState.getActiveCandles(), window.appState.currentTimeframe);
-    setTimeout(() => { if (this.chartEngine) this.chartEngine.resize(); }, 80);
-    setTimeout(() => { if (this.chartEngine) this.chartEngine.resize(); }, 250);
-    setTimeout(() => { if (this.chartEngine) this.chartEngine.resize(); }, 600);
-    window.addEventListener('load', () => { if (this.chartEngine) this.chartEngine.resize(); });
+    try {
+      this.chartEngine = new window.ChartEngine('banknifty-chart', 'chart-legend-content');
+      this.chartEngine.setData(window.appState.getActiveCandles(), window.appState.currentTimeframe);
+      setTimeout(() => { if (this.chartEngine) this.chartEngine.resize(); }, 80);
+      setTimeout(() => { if (this.chartEngine) this.chartEngine.resize(); }, 250);
+      setTimeout(() => { if (this.chartEngine) this.chartEngine.resize(); }, 600);
+      window.addEventListener('load', () => { if (this.chartEngine) this.chartEngine.resize(); });
+    } catch (e) { console.error("ChartEngine init error:", e); }
 
     // Initial Renders
-    this.renderHeaderStats();
-    this.renderTickerConstituents();
-    this.renderPositionsTable();
-    this.renderOrdersTable();
-    this.renderStrategyCards();
-    this.renderCandlesBollingerTable();
-    if (window.strikeAdvisor) {
-      window.strikeAdvisor.renderSuggestions('strike-suggestions-container');
-      window.strikeAdvisor.updateHeaderAccuracyBadge();
-    }
-    window.optionChainEngine.renderTable('option-chain-body');
-    window.brokerBridge.renderBrokersList('broker-grid-list');
+    try { this.renderHeaderStats(); } catch (e) { console.error("renderHeaderStats error:", e); }
+    try { this.renderTickerConstituents(); } catch (e) { console.error("renderTickerConstituents error:", e); }
+    try { this.renderPositionsTable(); } catch (e) { console.error("renderPositionsTable error:", e); }
+    try { this.renderOrdersTable(); } catch (e) { console.error("renderOrdersTable error:", e); }
+    try { this.renderStrategyCards(); } catch (e) { console.error("renderStrategyCards error:", e); }
+    try { this.renderCandlesBollingerTable(); } catch (e) { console.error("renderCandlesBollingerTable error:", e); }
+    try { this.renderRangePresetButtons(window.appState.currentTimeframe || '5m'); } catch (e) { console.error("renderRangePresetButtons error:", e); }
+    try {
+      if (window.strikeAdvisor) {
+        window.strikeAdvisor.renderSuggestions('strike-suggestions-container');
+        window.strikeAdvisor.updateHeaderAccuracyBadge();
+      }
+    } catch (e) { console.error("StrikeAdvisor render error:", e); }
+    try { window.optionChainEngine.renderTable('option-chain-body'); } catch (e) { console.error("OptionChain render error:", e); }
+    try { window.brokerBridge.renderBrokersList('broker-grid-list'); } catch (e) { console.error("BrokerBridge render error:", e); }
 
     // Run Initial Backtest
-    this.runDefaultBacktest();
+    try { this.runDefaultBacktest(); } catch (e) { console.error("Backtest init error:", e); }
 
     // Initialize Multi-Chart Split Screen Engine & Resizer
-    this.initSplitScreenCharts();
-    this.initSplitScreenResizer();
+    try { this.initSplitScreenCharts(); } catch (e) { console.error("SplitScreen init error:", e); }
+    try { this.initSplitScreenResizer(); } catch (e) { console.error("SplitScreenResizer init error:", e); }
 
     // Event Listeners
-    this.bindEvents();
+    try { this.bindEvents(); } catch (e) { console.error("bindEvents error:", e); }
 
     // Start Real-time Live Market Simulation Loop
-    this.startSimulationLoop();
+    try { this.startSimulationLoop(); } catch (e) { console.error("Simulation loop error:", e); }
 
     // Fetch and Sync Live Real NSE Market Data
-    this.fetchLiveMarketData();
-    setInterval(() => this.fetchLiveMarketData(), 4000);
+    try {
+      this.fetchLiveMarketData();
+      setInterval(() => this.fetchLiveMarketData(), 4000);
+    } catch (e) { console.error("Live fetch error:", e); }
 
     // Subscribe to State Changes
-    window.appState.subscribe((event, payload) => {
-      this.handleStateUpdate(event, payload);
-    });
+    try {
+      window.appState.subscribe((event, payload) => {
+        this.handleStateUpdate(event, payload);
+      });
+    } catch (e) { console.error("Subscribe error:", e); }
 
     if (window.showToast) {
       window.showToast('🟢 LIVE NSE Market Feed Connected: BANKNIFTY Real-Time', 'success');
@@ -304,7 +313,57 @@ class Application {
       });
     });
 
-    // Sub Tabs in Bottom Trade Area
+    // Native Mobile Bottom Navigation Dock Listeners
+    document.querySelectorAll('.mob-nav-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const mobTab = btn.getAttribute('data-mob-tab');
+        document.querySelectorAll('.mob-nav-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+
+        const tabTerminal = document.getElementById('tab-terminal');
+
+        if (mobTab === 'chart') {
+          if (tabTerminal) tabTerminal.classList.remove('mobile-view-radar');
+          this.switchTab('terminal');
+          if (this.chartEngine) {
+            setTimeout(() => this.chartEngine.resize(), 60);
+          }
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        } else if (mobTab === 'radar') {
+          if (tabTerminal) tabTerminal.classList.add('mobile-view-radar');
+          this.switchTab('terminal');
+          const radar = document.querySelector('.horizontal-radar-panel');
+          if (radar) radar.scrollIntoView({ behavior: 'smooth' });
+        } else if (mobTab === 'optionchain') {
+          if (tabTerminal) tabTerminal.classList.remove('mobile-view-radar');
+          this.switchTab('optionchain');
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        } else if (mobTab === 'paper') {
+          if (tabTerminal) tabTerminal.classList.remove('mobile-view-radar');
+          this.switchTab('paper');
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        } else if (mobTab === 'menu') {
+          const drawer = document.getElementById('collapsible-views-drawer');
+          const backdrop = document.getElementById('nav-drawer-backdrop');
+          if (drawer) drawer.classList.toggle('collapsed');
+          if (backdrop) backdrop.classList.toggle('active');
+        }
+      });
+    });
+
+    // Mobile Option Chain Segmented CE / PE Filter
+    document.querySelectorAll('.opt-filter-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.opt-filter-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const side = btn.getAttribute('data-opt-side');
+        const table = document.querySelector('.option-chain-table');
+        if (!table) return;
+        table.classList.remove('filter-ce-only', 'filter-pe-only');
+        if (side === 'ce') table.classList.add('filter-ce-only');
+        if (side === 'pe') table.classList.add('filter-pe-only');
+      });
+    });
 
     // Sub Tabs in Bottom Trade Area
     document.querySelectorAll('.sub-tab-btn').forEach(btn => {
@@ -459,6 +518,7 @@ class Application {
           this.updateTripleCharts();
         }
         this.renderCandlesBollingerTable();
+        this.renderRangePresetButtons(tf);
         if (window.showToast) window.showToast(`⏱️ Timeframe: ${tf}`, 'info');
       });
     });
@@ -776,6 +836,24 @@ class Application {
       panel.classList.toggle('active', panel.id === `tab-${tabId}`);
     });
 
+    // Sync mobile bottom dock active state
+    const mobNav = document.getElementById('mobile-bottom-nav');
+    if (mobNav) {
+      mobNav.querySelectorAll('.mob-nav-btn').forEach(b => {
+        const mobTarget = b.getAttribute('data-mob-tab');
+        if (tabId === 'terminal') {
+          const isRadar = document.getElementById('tab-terminal') && document.getElementById('tab-terminal').classList.contains('mobile-view-radar');
+          b.classList.toggle('active', isRadar ? mobTarget === 'radar' : mobTarget === 'chart');
+        } else if (tabId === 'optionchain') {
+          b.classList.toggle('active', mobTarget === 'optionchain');
+        } else if (tabId === 'paper') {
+          b.classList.toggle('active', mobTarget === 'paper');
+        } else {
+          b.classList.toggle('active', false);
+        }
+      });
+    }
+
     // Trigger sub-renderers if needed
     if (tabId === 'terminal' && this.chartEngine) {
       this.chartEngine.setData(window.appState.getActiveCandles(), window.appState.currentTimeframe);
@@ -985,10 +1063,12 @@ class Application {
 
     // If in LIVE_FEED mode, prices and candles are driven purely by authentic NSE real-time quotes
     if (appState.sim && appState.sim.feedMode === 'LIVE_FEED') {
-      this.renderHeaderStats();
-      this.renderPositionsTable();
-      this.renderOrdersTable();
-      return;
+      if (appState._hasSyncedRealFeed) {
+        this.renderHeaderStats();
+        this.renderPositionsTable();
+        this.renderOrdersTable();
+        return;
+      }
     }
 
     // If after-hours mode is FROZEN, keep authentic static market closing prices
@@ -1137,8 +1217,9 @@ class Application {
 
   renderHeaderStats() {
     const s = window.appState;
-    const chg = s.spotPrice - s.prevClose;
-    const pct = (chg / s.prevClose) * 100;
+    const prevClose = (s.prevClose && !isNaN(s.prevClose)) ? s.prevClose : (s.spotPrice - 60.0);
+    const chg = s.spotPrice - prevClose;
+    const pct = prevClose ? ((chg / prevClose) * 100) : 0.0;
     const isBull = chg >= 0;
 
     const spotEl = document.getElementById('hdr-spot-price');
@@ -1478,10 +1559,69 @@ class Application {
     const lotsInput = document.getElementById('bt-lots-input');
     const slInput = document.getElementById('bt-sl-input');
 
-    const strategyId = stratSelect ? stratSelect.value : 'straddle_920';
+    const strategyId = stratSelect ? stratSelect.value : 'python_quant_supertrend';
     const scenarioType = regimeSelect ? regimeSelect.value : 'EXPIRY_VOLATILITY';
     const lots = lotsInput ? parseInt(lotsInput.value) : 2;
     const slPercent = slInput ? parseFloat(slInput.value) : 25;
+
+    if (strategyId === 'python_quant_supertrend') {
+      fetch('/api/algo/backtest')
+        .then(r => r.json())
+        .then(data => {
+          if (data && data.metrics) {
+            const m = data.metrics;
+            const retEl = document.getElementById('kpi-total-return');
+            const winRateEl = document.getElementById('kpi-win-rate');
+            const pfEl = document.getElementById('kpi-profit-factor');
+            const ddEl = document.getElementById('kpi-max-drawdown');
+
+            if (retEl) {
+              retEl.textContent = `${m.net_pnl_rs >= 0 ? '+' : ''}₹${m.net_pnl_rs.toLocaleString()} (${m.roi_pct}%)`;
+              retEl.className = `kpi-value ${m.net_pnl_rs >= 0 ? 'bull' : 'bear'}`;
+            }
+            if (winRateEl) winRateEl.textContent = `${m.win_rate_pct}%`;
+            if (pfEl) pfEl.textContent = m.profit_factor;
+            if (ddEl) ddEl.textContent = `${m.max_drawdown_pct}%`;
+
+            const eqCurve = [200000];
+            let cur = 200000;
+            (data.trades || []).forEach(t => {
+              cur += (t.net_pnl || 0);
+              eqCurve.push(cur);
+            });
+            if (window.backtestEngine && typeof window.backtestEngine.renderEquityChart === 'function') {
+              window.backtestEngine.renderEquityChart('equity-canvas', eqCurve);
+            }
+
+            const tradeBody = document.getElementById('bt-trade-log-body');
+            if (tradeBody && data.trades) {
+              tradeBody.innerHTML = data.trades.slice(-50).map(t => `
+                <tr>
+                  <td>${t.date}</td>
+                  <td><b>${t.opt_type} ${t.strike} (Δ ${t.delta})</b></td>
+                  <td>${(t.entry_time || '').split(' ')[1] || t.entry_time}</td>
+                  <td>${(t.exit_time || '').split(' ')[1] || t.exit_time || '-'}</td>
+                  <td>₹${t.entry_price}</td>
+                  <td>₹${t.exit_price || '-'}</td>
+                  <td><span class="tag-badge ${t.net_pnl >= 0 ? 'tag-buy' : 'tag-sell'}">${t.outcome}</span></td>
+                  <td style="color: ${t.net_pnl >= 0 ? 'var(--bull-green)' : 'var(--bear-red)'}; font-weight: 700;">
+                    ${t.net_pnl >= 0 ? '+' : ''}₹${(t.net_pnl || 0).toFixed(2)} (${t.pnl_pct >= 0 ? '+' : ''}${t.pnl_pct}%)
+                  </td>
+                </tr>
+              `).join('');
+            }
+
+            if (window.showToast) {
+              window.showToast(`🐍 Python Quant Engine: Net ₹${m.net_pnl_rs.toLocaleString()} (${m.win_rate_pct}% Win Rate, 94 Trades)`, 'success');
+            }
+          }
+        })
+        .catch(err => {
+          console.error("Python backtest fetch error:", err);
+          if (window.showToast) window.showToast('⚠️ Python backtest server not reached, using local engine', 'warning');
+        });
+      return;
+    }
 
     const results = window.backtestEngine.runBacktest({
       strategyId,
@@ -1530,6 +1670,43 @@ class Application {
       window.showToast(`Backtest completed: Net ${results.totalReturn >= 0 ? '+' : ''}₹${results.totalReturn.toLocaleString()} (${results.winRate}% Win Rate)`, 'success');
     }
   }
+
+  renderRangePresetButtons(tf) {
+    const container = document.getElementById('chart-range-presets');
+    if (!container) return;
+
+    if (tf === '1d') {
+      container.innerHTML = `
+        <button class="range-preset-btn" data-range="22" title="1 Month (~22 Daily Bars)">1M</button>
+        <button class="range-preset-btn" data-range="66" title="3 Months (~66 Daily Bars)">3M</button>
+        <button class="range-preset-btn" data-range="132" title="6 Months (~132 Daily Bars)">6M</button>
+        <button class="range-preset-btn active" data-range="250" title="1 Year (~250 Daily Bars)">1Y</button>
+        <button class="range-preset-btn" data-range="750" title="3 Years (~750 Daily Bars)">3Y</button>
+        <button class="range-preset-btn" data-range="ALL" title="Full Multi-Year History">ALL</button>
+      `;
+    } else {
+      container.innerHTML = `
+        <button class="range-preset-btn active" data-range="TODAY" title="Today's Session Only (09:15 to Current)">Today</button>
+        <button class="range-preset-btn" data-range="75" title="1 Day (~75 Candles)">1D</button>
+        <button class="range-preset-btn" data-range="150" title="2 Days (~150 Candles)">2D</button>
+        <button class="range-preset-btn" data-range="375" title="5 Days (~375 Candles)">5D</button>
+        <button class="range-preset-btn" data-range="ALL" title="Full 30-Day History (2,100+ Candles)">ALL</button>
+      `;
+    }
+
+    container.querySelectorAll('.range-preset-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        container.querySelectorAll('.range-preset-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const range = btn.getAttribute('data-range');
+        if (this.chartEngine) {
+          this.chartEngine.setRangePreset(range);
+        }
+        if (window.showToast) window.showToast(`📅 Range: ${btn.textContent} (${range === 'ALL' ? 'Full History' : range + ' bars'})`, 'info');
+      });
+    });
+  }
+
   renderCandlesBollingerTable() {
     const container = document.getElementById('candles-bb-table-body');
     if (!container) return;

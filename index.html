@@ -1069,6 +1069,11 @@ class BankNiftyCustomScalper(Strategy):
                 <div id="pcr-needle-marker" class="pcr-needle" style="left: 63%;"></div>
               </div>
             </div>
+          <!-- Mobile CE / PE Column Segmented Filter -->
+          <div class="opt-mobile-filter-bar" id="opt-mobile-filter-bar">
+            <button type="button" class="opt-filter-btn active" data-opt-side="all">Both (CE &amp; PE)</button>
+            <button type="button" class="opt-filter-btn" data-opt-side="ce">🟢 Calls (CE)</button>
+            <button type="button" class="opt-filter-btn" data-opt-side="pe">🔴 Puts (PE)</button>
           </div>
 
           <!-- Dynamic Option Chain Table -->
@@ -1175,6 +1180,31 @@ class BankNiftyCustomScalper(Strategy):
         </div>
       </div>
     </footer>
+
+    <!-- NATIVE MOBILE BOTTOM NAVIGATION DOCK (iOS & Android Phones / PWA) -->
+    <nav class="mobile-bottom-nav" id="mobile-bottom-nav">
+      <button type="button" class="mob-nav-btn active" data-mob-tab="chart">
+        <span class="mob-nav-icon">📈</span>
+        <span class="mob-nav-label">Chart</span>
+      </button>
+      <button type="button" class="mob-nav-btn" data-mob-tab="radar">
+        <span class="mob-nav-icon">🎯</span>
+        <span class="mob-nav-label">AI Radar</span>
+        <span class="mob-nav-badge">4</span>
+      </button>
+      <button type="button" class="mob-nav-btn" data-mob-tab="optionchain">
+        <span class="mob-nav-icon">⛓️</span>
+        <span class="mob-nav-label">Options</span>
+      </button>
+      <button type="button" class="mob-nav-btn" data-mob-tab="paper">
+        <span class="mob-nav-icon">💼</span>
+        <span class="mob-nav-label">Portfolio</span>
+      </button>
+      <button type="button" class="mob-nav-btn" data-mob-tab="menu">
+        <span class="mob-nav-icon">☰</span>
+        <span class="mob-nav-label">Menu</span>
+      </button>
+    </nav>
 
   </div>
 
