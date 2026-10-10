@@ -1,5 +1,5 @@
 // BankNifty AlgoEdge Pro — Service Worker (PWA & Offline Cache)
-const CACHE_NAME = 'banknifty-algoedge-v2.9.9';
+const CACHE_NAME = 'banknifty-algoedge-v3.0.0';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',

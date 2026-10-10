@@ -31,7 +31,7 @@
   <div id="pwa-update-banner" style="display: none; position: fixed; top: 0; left: 0; right: 0; z-index: 99999; background: linear-gradient(90deg, #059669 0%, #0284C7 100%); color: #FFF; padding: 7px 16px; font-family: var(--font-mono); font-size: 0.78rem; font-weight: 700; box-shadow: 0 4px 16px rgba(0,0,0,0.4); align-items: center; justify-content: space-between;">
     <div style="display: flex; align-items: center; gap: 8px;">
       <span>⚡</span>
-      <span>A fresh update for BankNifty AlgoEdge Terminal (v2.9.9) is ready!</span>
+      <span>A fresh update for BankNifty AlgoEdge Terminal (v3.0.0) is ready!</span>
     </div>
     <div style="display: flex; gap: 8px;">
       <button id="btn-update-reload" class="btn btn-sm" style="background: #FFF; color: #065F46; font-weight: 800; padding: 3px 12px; font-size: 0.74rem; border-radius: 4px; border: none; cursor: pointer;">Apply &amp; Reload Now</button>
@@ -1038,35 +1038,35 @@ class BankNiftyCustomScalper(Strategy):
       <section id="tab-optionchain" class="tab-panel">
         <div class="option-chain-container">
           
-          <!-- Summary Header -->
-          <div class="option-summary-bar" style="display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
+          <!-- Summary Header (Ultra-Compact on Mobile & Landscape) -->
+          <div class="option-summary-bar" id="option-summary-bar">
             <div class="summary-stat-group">
               <!-- Expiry Selector Control in Option Chain -->
-              <div class="opt-stat" style="border-right: 1px solid var(--border-medium); padding-right: 12px; margin-right: 4px;">
-                <span class="opt-stat-lbl" style="color: var(--cyan-primary);">SELECT EXPIRY CYCLE</span>
-                <select id="optchain-expiry-select" class="toolbar-select" style="min-width: 170px; font-size: 0.76rem; background: #080C14; color: var(--cyan-primary); font-weight: 700; border: 1px solid var(--border-medium); padding: 3px 6px; border-radius: 4px; margin-top: 2px;">
+              <div class="opt-stat opt-stat-expiry">
+                <span class="opt-stat-lbl">EXPIRY</span>
+                <select id="optchain-expiry-select" class="toolbar-select opt-expiry-select">
                   <!-- Dynamic Injected Rolling Expiries -->
                 </select>
               </div>
 
-              <div class="opt-stat">
-                <span class="opt-stat-lbl">TOTAL CALL OI</span>
+              <div class="opt-stat opt-stat-call">
+                <span class="opt-stat-lbl">CALL OI</span>
                 <span id="opt-summary-call-oi" class="opt-stat-val" style="color: var(--bull-green);">28.45 L</span>
               </div>
-              <div class="opt-stat">
-                <span class="opt-stat-lbl">TOTAL PUT OI</span>
+              <div class="opt-stat opt-stat-put">
+                <span class="opt-stat-lbl">PUT OI</span>
                 <span id="opt-summary-put-oi" class="opt-stat-val" style="color: var(--bear-red);">32.18 L</span>
               </div>
-              <div class="opt-stat">
-                <span class="opt-stat-lbl">MAX PAIN STRIKE</span>
+              <div class="opt-stat opt-stat-pain">
+                <span class="opt-stat-lbl">MAX PAIN</span>
                 <span id="opt-summary-max-pain" class="opt-stat-val" style="color: var(--cyan-primary);">57,500</span>
               </div>
             </div>
 
             <!-- PCR Meter -->
             <div class="pcr-gauge-wrap">
-              <div class="opt-stat" style="text-align: right;">
-                <span class="opt-stat-lbl">PUT-CALL RATIO (PCR)</span>
+              <div class="opt-stat opt-stat-pcr">
+                <span class="opt-stat-lbl">PCR</span>
                 <span id="opt-summary-pcr" class="opt-stat-val" style="color: var(--bull-green);">1.13 (Bullish)</span>
               </div>
               <div class="pcr-meter-bar">
@@ -1457,7 +1457,7 @@ class BankNiftyCustomScalper(Strategy):
         if (window.caches) {
           caches.keys().then(keys => {
             keys.forEach(k => {
-              if (k !== 'banknifty-algoedge-v2.9.9') {
+              if (k !== 'banknifty-algoedge-v3.0.0') {
                 caches.delete(k);
               }
             });
