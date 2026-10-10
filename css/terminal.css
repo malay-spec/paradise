@@ -1765,6 +1765,17 @@
   box-shadow: 0 0 10px rgba(0, 240, 255, 0.35);
 }
 
+.btn-landscape-toggle.in-landscape-mode {
+  background: rgba(16, 185, 129, 0.16) !important;
+  border-color: rgba(16, 185, 129, 0.5) !important;
+  color: #34D399 !important;
+}
+
+.btn-landscape-toggle.in-landscape-mode:hover {
+  background: rgba(16, 185, 129, 0.28) !important;
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.35) !important;
+}
+
 @media (max-width: 768px), (orientation: landscape) and (max-height: 600px), (max-width: 960px) and (orientation: landscape) {
   /* Prevent horizontal screen expansion on phones */
   html, body, .app-container {

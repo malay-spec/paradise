@@ -103,6 +103,9 @@ class Application {
       });
     } catch (e) { console.error("Subscribe error:", e); }
 
+    // Initialize Mobile Orientation Change Handler
+    try { this.initOrientationHandling(); } catch (e) { console.error("Orientation init error:", e); }
+
     if (window.showToast) {
       window.showToast('🟢 LIVE NSE Market Feed Connected: BANKNIFTY Real-Time', 'success');
     }
@@ -2554,48 +2557,97 @@ class Application {
     `;
   }
 
+  initOrientationHandling() {
+    this.updateOrientationUI();
+    const screenObj = typeof screen !== 'undefined' ? screen : (typeof window !== 'undefined' ? window.screen : null);
+    if (screenObj && screenObj.orientation && screenObj.orientation.addEventListener) {
+      screenObj.orientation.addEventListener('change', () => {
+        this.updateOrientationUI();
+        if (this.chartEngine) setTimeout(() => this.chartEngine.resize(), 150);
+      });
+    }
+    window.addEventListener('orientationchange', () => {
+      this.updateOrientationUI();
+      if (this.chartEngine) setTimeout(() => this.chartEngine.resize(), 150);
+    });
+    window.addEventListener('resize', () => {
+      this.updateOrientationUI();
+    });
+  }
+
+  updateOrientationUI() {
+    const isLandscape = (typeof window.matchMedia === 'function' && window.matchMedia('(orientation: landscape)').matches) || 
+      (typeof screen !== 'undefined' && screen.orientation && screen.orientation.type && screen.orientation.type.includes('landscape'));
+
+    const landscapeBtn = document.getElementById('btn-toggle-landscape');
+    if (landscapeBtn) {
+      const textSpan = landscapeBtn.querySelector('.landscape-toggle-text');
+      const iconSpan = landscapeBtn.querySelector('.landscape-toggle-icon') || landscapeBtn.querySelector('span:first-child');
+      
+      if (isLandscape) {
+        if (textSpan) textSpan.textContent = 'Portrait';
+        if (iconSpan) iconSpan.textContent = '📱';
+        landscapeBtn.title = 'Switch back to Portrait Mode';
+        landscapeBtn.classList.add('in-landscape-mode');
+      } else {
+        if (textSpan) textSpan.textContent = 'Landscape';
+        if (iconSpan) iconSpan.textContent = '🔄';
+        landscapeBtn.title = 'Switch to Fullscreen Landscape Mode';
+        landscapeBtn.classList.remove('in-landscape-mode');
+      }
+    }
+
+    const chartFsBtn = document.getElementById('btn-chart-fullscreen');
+    if (chartFsBtn) {
+      chartFsBtn.textContent = isLandscape ? '📱 Portrait' : '⛶ Widescreen';
+      chartFsBtn.title = isLandscape ? 'Switch back to Portrait Mode' : 'Toggle Fullscreen Landscape Mode';
+    }
+  }
+
   async toggleMobileLandscape() {
     try {
-      const isLandscape = window.matchMedia('(orientation: landscape)').matches;
-      if (screen.orientation && screen.orientation.lock) {
-        if (!isLandscape) {
-          if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
-            await document.documentElement.requestFullscreen().catch(() => {});
-          }
-          await screen.orientation.lock('landscape').catch(() => {});
-          if (window.showToast) {
-            window.showToast('🔄 Locked to Landscape Widescreen Mode', 'success');
-          }
-        } else {
-          if (screen.orientation.unlock) {
-            screen.orientation.unlock();
-          }
-          if (document.fullscreenElement && document.exitFullscreen) {
-            await document.exitFullscreen().catch(() => {});
-          }
-          if (window.showToast) {
-            window.showToast('📱 Switched to Standard View', 'info');
-          }
-        }
-        if (this.chartEngine) {
-          setTimeout(() => this.chartEngine.resize(), 100);
-          setTimeout(() => this.chartEngine.resize(), 300);
-        }
-      } else {
+      const isLandscape = (typeof window.matchMedia === 'function' && window.matchMedia('(orientation: landscape)').matches) || 
+        (typeof screen !== 'undefined' && screen.orientation && screen.orientation.type && screen.orientation.type.includes('landscape'));
+      const screenObj = typeof screen !== 'undefined' ? screen : (typeof window !== 'undefined' ? window.screen : null);
+
+      if (!isLandscape) {
         if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
           await document.documentElement.requestFullscreen().catch(() => {});
         }
+        if (screenObj && screenObj.orientation && screenObj.orientation.lock) {
+          await screenObj.orientation.lock('landscape').catch(() => {});
+        }
         if (window.showToast) {
-          window.showToast('📱 Turn phone sideways & enable Auto-Rotate for widescreen landscape!', 'info');
+          window.showToast('🔄 Switched to Landscape Widescreen Mode', 'success');
         }
-        if (this.chartEngine) {
-          setTimeout(() => this.chartEngine.resize(), 200);
+      } else {
+        if (screenObj && screenObj.orientation && screenObj.orientation.lock) {
+          await screenObj.orientation.lock('portrait').catch(() => {});
         }
+        if (screenObj && screenObj.orientation && screenObj.orientation.unlock) {
+          screenObj.orientation.unlock();
+        }
+        if (document.fullscreenElement && document.exitFullscreen) {
+          await document.exitFullscreen().catch(() => {});
+        }
+        if (window.showToast) {
+          window.showToast('📱 Switched back to Portrait View', 'info');
+        }
+      }
+
+      this.updateOrientationUI();
+      setTimeout(() => this.updateOrientationUI(), 100);
+      setTimeout(() => this.updateOrientationUI(), 300);
+
+      if (this.chartEngine) {
+        setTimeout(() => this.chartEngine.resize(), 100);
+        setTimeout(() => this.chartEngine.resize(), 300);
       }
     } catch (err) {
       if (window.showToast) {
-        window.showToast('📱 Turn phone sideways & enable Auto-Rotate for widescreen landscape!', 'info');
+        window.showToast('📱 Rotate phone & enable Auto-Rotate to switch orientation', 'info');
       }
+      this.updateOrientationUI();
     }
   }
 }
