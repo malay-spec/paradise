@@ -126,38 +126,42 @@ class OptionChainEngine {
     return Math.exp(-0.5 * x * x) / Math.sqrt(2 * Math.PI);
   }
 
-  // Calculate Black-Scholes Greeks and Theoretical Price (Forward cost-of-carry aligned for NSE Index Options)
-  calculateGreeks(spot, strike, daysToExpiry = 5.0, ivPercent = 13.5) {
-    const T = Math.max(0.0012, daysToExpiry / 365.0);
-    const sigma = Math.max(0.05, ivPercent / 100.0);
-    const r = daysToExpiry > 7 ? 0.058 : 0.0;
+  // Calculate Black-Scholes Greeks and Theoretical Price (Aligned with NSE Derivative Pricing & Zerodha)
+  calculateGreeks(spot, strike, daysToExpiry = 7.0, ivPercent = 13.5) {
+    const T = Math.max(0.0005, daysToExpiry / 365.0);
+    const m = Math.log(strike / spot);
+    const baseIv = ivPercent || 13.5;
+    
+    // Balanced skew for Call vs Put
+    const sigmaCall = Math.max(0.06, (baseIv + Math.max(-2, Math.min(5, m * 6.0))) / 100.0);
+    const sigmaPut = Math.max(0.06, (baseIv + Math.max(-2, Math.min(6, -m * 8.0))) / 100.0);
+    const r = 0.065;
 
-    const d1 = (Math.log(spot / strike) + (r + 0.5 * sigma * sigma) * T) / (sigma * Math.sqrt(T));
-    const d2 = d1 - sigma * Math.sqrt(T);
+    // Call calculation
+    const d1_c = (Math.log(spot / strike) + (r + 0.5 * sigmaCall * sigmaCall) * T) / (sigmaCall * Math.sqrt(T));
+    const d2_c = d1_c - sigmaCall * Math.sqrt(T);
+    const Nd1_c = this.cnd(d1_c);
+    const Nd2_c = this.cnd(d2_c);
+    const callPrice = spot * Nd1_c - strike * Math.exp(-r * T) * Nd2_c;
 
-    const Nd1 = this.cnd(d1);
-    const Nd2 = this.cnd(d2);
-    const N_minus_d1 = this.cnd(-d1);
-    const N_minus_d2 = this.cnd(-d2);
-    const npdf_d1 = this.npdf(d1);
-
-    // Call / Put Prices (Strict Put-Call Parity: C - P = S - K*e^-rT)
-    const callPrice = spot * Nd1 - strike * Math.exp(-r * T) * Nd2;
-    const putPrice = strike * Math.exp(-r * T) * N_minus_d2 - spot * N_minus_d1;
+    // Put calculation
+    const d1_p = (Math.log(spot / strike) + (r + 0.5 * sigmaPut * sigmaPut) * T) / (sigmaPut * Math.sqrt(T));
+    const d2_p = d1_p - sigmaPut * Math.sqrt(T);
+    const Nd1_p = this.cnd(d1_p);
+    const N_minus_d1_p = this.cnd(-d1_p);
+    const N_minus_d2_p = this.cnd(-d2_p);
+    const putPrice = strike * Math.exp(-r * T) * N_minus_d2_p - spot * N_minus_d1_p;
 
     // Greeks
-    const callDelta = Nd1;
-    const putDelta = Nd1 - 1.0;
+    const callDelta = Nd1_c;
+    const putDelta = Nd1_p - 1.0;
 
-    const gamma = npdf_d1 / (spot * sigma * Math.sqrt(T));
+    const npdf_d1 = this.npdf(d1_c);
+    const gamma = npdf_d1 / (spot * sigmaCall * Math.sqrt(T));
     const vega = (spot * Math.sqrt(T) * npdf_d1) / 100.0; // Per 1% IV move
 
-    // Theta (per 1 day decay)
-    const thetaCallYear = -(spot * npdf_d1 * sigma) / (2 * Math.sqrt(T));
-    const thetaPutYear = -(spot * npdf_d1 * sigma) / (2 * Math.sqrt(T));
-
-    const callTheta = thetaCallYear / 365.0;
-    const putTheta = thetaPutYear / 365.0;
+    const callTheta = -(spot * npdf_d1 * sigmaCall) / (2 * Math.sqrt(T) * 365.0);
+    const putTheta = -(spot * this.npdf(d1_p) * sigmaPut) / (2 * Math.sqrt(T) * 365.0);
 
     const callIntrinsic = Math.max(0.0, spot - strike);
     const putIntrinsic = Math.max(0.0, strike - spot);
@@ -185,8 +189,9 @@ class OptionChainEngine {
     let totalPutOI = 0;
     let maxPainStrike = atmStrike;
     let minLoss = Infinity;
-    const baseIV = vix || (window.appState && window.appState.indiaVix) || 11.23;
-    const dte = (window.appState && window.appState.getDaysToExpiry) ? window.appState.getDaysToExpiry() : 0.85;
+    const rawVix = vix || (window.appState && window.appState.indiaVix) || 11.23;
+    const baseIV = Math.max(14.5, parseFloat(rawVix) * 1.31);
+    const dte = (window.appState && window.appState.getDaysToExpiry) ? window.appState.getDaysToExpiry() : 21.0;
 
     for (let i = -this.strikesRange; i <= this.strikesRange; i++) {
       const strike = atmStrike + i * 100;

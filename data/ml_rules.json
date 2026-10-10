@@ -1,0 +1,82 @@
+{
+  "model_name": "RandomForestClassifier",
+  "n_estimators": 100,
+  "max_depth": 5,
+  "cv_accuracy_pct": 70.06,
+  "roc_auc": 0.427,
+  "feature_ranking": [
+    {
+      "feature": "ema50_dist",
+      "importance_pct": 19.42
+    },
+    {
+      "feature": "day_open_drift",
+      "importance_pct": 17.54
+    },
+    {
+      "feature": "rsi",
+      "importance_pct": 17.1
+    },
+    {
+      "feature": "vwap_dist",
+      "importance_pct": 13.66
+    },
+    {
+      "feature": "supertrend_dist",
+      "importance_pct": 10.45
+    },
+    {
+      "feature": "confluence_score",
+      "importance_pct": 8.07
+    },
+    {
+      "feature": "cpr_width_pct",
+      "importance_pct": 6.84
+    },
+    {
+      "feature": "delta",
+      "importance_pct": 5.07
+    },
+    {
+      "feature": "cpr_type_code",
+      "importance_pct": 0.95
+    },
+    {
+      "feature": "is_call",
+      "importance_pct": 0.92
+    }
+  ],
+  "recommended_threshold": 0.65,
+  "threshold_matrix": [
+    {
+      "threshold": 0.5,
+      "trades": 56,
+      "win_rate_pct": 82.14,
+      "net_pnl": 80865.61
+    },
+    {
+      "threshold": 0.6,
+      "trades": 40,
+      "win_rate_pct": 95.0,
+      "net_pnl": 92458.53
+    },
+    {
+      "threshold": 0.7,
+      "trades": 30,
+      "win_rate_pct": 100.0,
+      "net_pnl": 75613.78
+    },
+    {
+      "threshold": 0.8,
+      "trades": 13,
+      "win_rate_pct": 100.0,
+      "net_pnl": 19803.26
+    }
+  ],
+  "institutional_rules": [
+    "Rule 1: Confluence score must be >= 60 on 5-minute chart with 15m macro trend alignment.",
+    "Rule 2: On WIDE CPR days, breakout probabilities drop 35%; prioritize mean-reversion straddles/strangles.",
+    "Rule 3: Supertrend distance > 140 pts indicates overextension; wait for pullback to 9/21 EMA.",
+    "Rule 4: Counter-trend entries blocked if Day Open Drift exceeds \u00b180 points."
+  ]
+}

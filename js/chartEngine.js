@@ -137,9 +137,23 @@ class ChartEngine {
   }
 
   resetZoom() {
-    const defaultCounts = { '1m': 90, '5m': 85, '10m': 75, '15m': 65, '30m': 55, '1d': 60 };
-    const target = defaultCounts[this.timeframe] || 85;
-    this.visibleCount = Math.min(this.candles.length || target, target);
+    if (this.timeframe === '1d') {
+      const target = Math.min(this.candles.length || 100, 100);
+      this.visibleCount = target;
+    } else {
+      const latestDate = this.candles[this.candles.length - 1]?.date;
+      let todayCount = 0;
+      if (latestDate) {
+        for (let i = this.candles.length - 1; i >= 0; i--) {
+          if (this.candles[i].date === latestDate) todayCount++;
+          else break;
+        }
+      }
+      const defaultCounts = { '1m': 60, '5m': 45, '10m': 40, '15m': 35, '30m': 30 };
+      const fallbackTarget = defaultCounts[this.timeframe] || 45;
+      const target = todayCount >= 8 ? Math.max(todayCount, fallbackTarget) : fallbackTarget;
+      this.visibleCount = Math.min(this.candles.length || target, target);
+    }
     this.offset = 0;
     this.render();
     this.resetLegendToLatest();
@@ -147,7 +161,22 @@ class ChartEngine {
 
   setRangePreset(count) {
     if (!this.candles || this.candles.length === 0) return;
-    const target = count === 'ALL' ? this.candles.length : Math.min(this.candles.length, Math.max(5, parseInt(count) || 100));
+    if (count === 'TODAY') {
+      const latestDate = this.candles[this.candles.length - 1]?.date;
+      if (latestDate) {
+        let todayCount = 0;
+        for (let i = this.candles.length - 1; i >= 0; i--) {
+          if (this.candles[i].date === latestDate) todayCount++;
+          else break;
+        }
+        this.visibleCount = Math.max(8, todayCount);
+        this.offset = 0; // Snap to latest candle
+        this.render();
+        this.resetLegendToLatest();
+        return;
+      }
+    }
+    const target = count === 'ALL' ? this.candles.length : Math.min(this.candles.length, Math.max(5, parseInt(count) || 45));
     this.visibleCount = target;
     this.offset = 0; // Snap to latest candle
     this.render();
@@ -160,9 +189,22 @@ class ChartEngine {
     this.timeframe = timeframe;
 
     if (isTfChange || !this.visibleCount) {
-      const defaultCounts = { '1m': 90, '5m': 85, '10m': 75, '15m': 65, '30m': 55, '1d': 100 };
-      const target = defaultCounts[this.timeframe] || 85;
-      this.visibleCount = Math.min(this.candles.length || target, target);
+      if (this.timeframe === '1d') {
+        this.visibleCount = Math.min(this.candles.length || 100, 100);
+      } else {
+        const latestDate = this.candles[this.candles.length - 1]?.date;
+        let todayCount = 0;
+        if (latestDate) {
+          for (let i = this.candles.length - 1; i >= 0; i--) {
+            if (this.candles[i].date === latestDate) todayCount++;
+            else break;
+          }
+        }
+        const defaultCounts = { '1m': 60, '5m': 45, '10m': 40, '15m': 35, '30m': 30 };
+        const fallbackTarget = defaultCounts[this.timeframe] || 45;
+        const target = todayCount >= 8 ? Math.max(todayCount, fallbackTarget) : fallbackTarget;
+        this.visibleCount = Math.min(this.candles.length || target, target);
+      }
       this.offset = 0;
     }
 
@@ -384,52 +426,71 @@ class ChartEngine {
     const supertrendValues = this.calculateSupertrend(this.candles, 10, 1.0).slice(startIdx, endIdx);
     const bbValues = this.calculateBollingerBands(this.candles, 20, 2.0).slice(startIdx, endIdx);
 
-    // Min / Max Price Calculation
-    let minPrice = Infinity;
-    let maxPrice = -Infinity;
+    // 1. Min / Max Price Calculation: Strictly anchored to visible candlestick Highs and Lows
+    let candleMin = Infinity;
+    let candleMax = -Infinity;
+
+    visibleCandles.forEach((c) => {
+      if (typeof c.low === 'number' && !isNaN(c.low) && c.low < candleMin) candleMin = c.low;
+      if (typeof c.high === 'number' && !isNaN(c.high) && c.high > candleMax) candleMax = c.high;
+    });
+
+    if (!isFinite(candleMin) || !isFinite(candleMax) || candleMin >= candleMax) {
+      candleMin = (visibleCandles[0] && visibleCandles[0].close) ? visibleCandles[0].close - 50 : 55000;
+      candleMax = candleMin + 100;
+    }
+
+    const candleRange = candleMax - candleMin || 10;
+
+    // 2. Controlled Indicator Extension:
+    // Overlays (Supertrend, Bollinger Bands, EMAs) may extend the price scale ONLY within
+    // a restrained envelope (maximum 8% beyond the candle boundaries). This completely prevents
+    // explosive gap-down/gap-up Bollinger Bands from inflating the Y-axis into empty space
+    // and flattening the candlesticks into microscopic slivers.
+    const maxIndicatorPadding = Math.max(15, candleRange * 0.08);
+    let minPrice = candleMin;
+    let maxPrice = candleMax;
 
     visibleCandles.forEach((c, idx) => {
-      if (typeof c.low === 'number' && !isNaN(c.low) && c.low < minPrice) minPrice = c.low;
-      if (typeof c.high === 'number' && !isNaN(c.high) && c.high > maxPrice) maxPrice = c.high;
       if (supertrendValues[idx] && typeof supertrendValues[idx].value === 'number' && !isNaN(supertrendValues[idx].value)) {
-        if (supertrendValues[idx].value < minPrice) minPrice = supertrendValues[idx].value;
-        if (supertrendValues[idx].value > maxPrice) maxPrice = supertrendValues[idx].value;
+        const v = supertrendValues[idx].value;
+        if (v < minPrice) minPrice = Math.max(candleMin - maxIndicatorPadding, v);
+        if (v > maxPrice) maxPrice = Math.min(candleMax + maxIndicatorPadding, v);
       }
       if (window.appState.indicators.bollinger && bbValues[idx]) {
-        if (typeof bbValues[idx].lower === 'number' && !isNaN(bbValues[idx].lower) && bbValues[idx].lower < minPrice) minPrice = bbValues[idx].lower;
-        if (typeof bbValues[idx].upper === 'number' && !isNaN(bbValues[idx].upper) && bbValues[idx].upper > maxPrice) maxPrice = bbValues[idx].upper;
+        const lower = bbValues[idx].lower;
+        const upper = bbValues[idx].upper;
+        if (typeof lower === 'number' && !isNaN(lower) && lower < minPrice) {
+          minPrice = Math.max(candleMin - maxIndicatorPadding, lower);
+        }
+        if (typeof upper === 'number' && !isNaN(upper) && upper > maxPrice) {
+          maxPrice = Math.min(candleMax + maxIndicatorPadding, upper);
+        }
       }
       if (window.appState.indicators.ema50 && ema50[idx] && typeof ema50[idx] === 'number' && !isNaN(ema50[idx])) {
-        if (ema50[idx] < minPrice) minPrice = ema50[idx];
-        if (ema50[idx] > maxPrice) maxPrice = ema50[idx];
+        const v = ema50[idx];
+        if (v < minPrice) minPrice = Math.max(candleMin - maxIndicatorPadding, v);
+        if (v > maxPrice) maxPrice = Math.min(candleMax + maxIndicatorPadding, v);
       }
     });
 
-    if (!isFinite(minPrice) || !isFinite(maxPrice) || minPrice >= maxPrice) {
-      minPrice = (visibleCandles[0] && visibleCandles[0].close) ? visibleCandles[0].close - 50 : 57000;
-      maxPrice = minPrice + 100;
-    }
-
-    // Enhanced vertical breathing room:
-    // 22% top padding ensures candles never hit the top ceiling or get occluded by top toolbars / legend
-    // 14% bottom padding keeps candles and lower wicks clear from bottom sub-panes
+    // 3. Proportional vertical padding matching TradingView & Zerodha Kite (8% top, 6% bottom)
     const priceRange = maxPrice - minPrice || 10;
-    const topPadding = priceRange * 0.22;
-    const bottomPadding = priceRange * 0.14;
+    const topPadding = priceRange * 0.08;
+    const bottomPadding = priceRange * 0.06;
     const adjustedMin = minPrice - bottomPadding;
     const adjustedMax = maxPrice + topPadding;
-    const adjustedRange = adjustedMax - adjustedMin;
+    const adjustedRange = adjustedMax - adjustedMin || 10;
 
     const getY = (val) => {
       return mainChartHeight - ((val - adjustedMin) / adjustedRange) * mainChartHeight;
     };
 
-    // Right-side margin: provides 6 blank candle slots so the live forming candle has ample breathing room,
-    // exactly matching TradingView and Zerodha Kite.
-    const rightMarginBars = (this.offset === 0) ? 6 : 2;
+    // Right-side margin: provides 5 blank candle slots so the live forming candle has ample breathing room
+    const rightMarginBars = (this.offset === 0) ? 5 : 2;
     const totalSlots = count + rightMarginBars;
     const candleWidth = chartWidth / totalSlots;
-    const bodyWidth = Math.max(3, Math.min(22, candleWidth * 0.68));
+    const bodyWidth = Math.max(4, Math.min(26, candleWidth * 0.70));
 
     // Draw Background Grid Lines
     this.drawGrid(chartWidth, mainChartHeight, priceScaleWidth, adjustedMin, adjustedMax, adjustedRange, isLight);
@@ -613,8 +674,8 @@ class ChartEngine {
       const highY = getY(c.high);
       const lowY = getY(c.low);
 
-      // Session Date Divider (Demarcates boundary between trading days)
-      if (idx > 0 && visibleCandles[idx].date && visibleCandles[idx - 1].date && visibleCandles[idx].date !== visibleCandles[idx - 1].date) {
+      // Session Date Divider (Demarcates boundary between trading days - Intraday only)
+      if (this.timeframe !== '1d' && idx > 0 && visibleCandles[idx].date && visibleCandles[idx - 1].date && visibleCandles[idx].date !== visibleCandles[idx - 1].date) {
         ctx.save();
         ctx.strokeStyle = isLight ? 'rgba(59, 130, 246, 0.45)' : 'rgba(0, 240, 255, 0.35)';
         ctx.lineWidth = 1;
@@ -636,7 +697,7 @@ class ChartEngine {
 
       // Wick
       ctx.strokeStyle = color;
-      ctx.lineWidth = 1.2;
+      ctx.lineWidth = candleWidth > 10 ? 1.5 : 1.2;
       ctx.beginPath();
       ctx.moveTo(x, highY);
       ctx.lineTo(x, lowY);
@@ -645,7 +706,8 @@ class ChartEngine {
       // Body
       ctx.fillStyle = color;
       const bodyY = Math.min(openY, closeY);
-      const bodyH = Math.max(2, Math.abs(closeY - openY));
+      const isDoji = Math.abs(closeY - openY) < 1;
+      const bodyH = isDoji ? 2 : Math.max(3, Math.abs(closeY - openY));
       ctx.fillRect(x - bodyWidth / 2, bodyY, bodyWidth, bodyH);
 
       // Pulse animation on the last candle
@@ -1352,6 +1414,7 @@ class ChartEngine {
   }
 
   bindScrollbar() {
+    if (this.canvas && this.canvas.id !== 'banknifty-chart') return;
     this.scrollTrack = document.getElementById('chart-scroll-track');
     this.scrollThumb = document.getElementById('chart-scroll-thumb');
     this.btnScrollInception = document.getElementById('btn-scroll-inception');
@@ -1452,6 +1515,7 @@ class ChartEngine {
   }
 
   updateScrollbarUI(startIdx, endIdx, totalCount) {
+    if (this.canvas && this.canvas.id !== 'banknifty-chart') return;
     if (!this.scrollTrack || !this.scrollThumb) return;
     if (totalCount <= 0) return;
 

@@ -2549,9 +2549,63 @@ class Application {
       </table>
     `;
   }
+
+  async toggleMobileLandscape() {
+    try {
+      const isLandscape = window.matchMedia('(orientation: landscape)').matches;
+      if (screen.orientation && screen.orientation.lock) {
+        if (!isLandscape) {
+          if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
+            await document.documentElement.requestFullscreen().catch(() => {});
+          }
+          await screen.orientation.lock('landscape').catch(() => {});
+          if (window.showToast) {
+            window.showToast('🔄 Locked to Landscape Widescreen Mode', 'success');
+          }
+        } else {
+          if (screen.orientation.unlock) {
+            screen.orientation.unlock();
+          }
+          if (document.fullscreenElement && document.exitFullscreen) {
+            await document.exitFullscreen().catch(() => {});
+          }
+          if (window.showToast) {
+            window.showToast('📱 Switched to Standard View', 'info');
+          }
+        }
+        if (this.chartEngine) {
+          setTimeout(() => this.chartEngine.resize(), 100);
+          setTimeout(() => this.chartEngine.resize(), 300);
+        }
+      } else {
+        if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
+          await document.documentElement.requestFullscreen().catch(() => {});
+        }
+        if (window.showToast) {
+          window.showToast('📱 Turn phone sideways & enable Auto-Rotate for widescreen landscape!', 'info');
+        }
+        if (this.chartEngine) {
+          setTimeout(() => this.chartEngine.resize(), 200);
+        }
+      }
+    } catch (err) {
+      if (window.showToast) {
+        window.showToast('📱 Turn phone sideways & enable Auto-Rotate for widescreen landscape!', 'info');
+      }
+    }
+  }
 }
 
 window.addEventListener('DOMContentLoaded', () => {
   window.app = new Application();
   window.app.init();
+});
+
+window.addEventListener('orientationchange', () => {
+  setTimeout(() => {
+    if (window.app && window.app.chartEngine) window.app.chartEngine.resize();
+  }, 150);
+  setTimeout(() => {
+    if (window.app && window.app.chartEngine) window.app.chartEngine.resize();
+  }, 400);
 });
