@@ -1,5 +1,5 @@
 // BankNifty AlgoEdge Pro — Service Worker (PWA & Offline Cache)
-const CACHE_NAME = 'banknifty-algoedge-v3.0.0';
+const CACHE_NAME = 'banknifty-algoedge-v3.2.2';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -13,6 +13,8 @@ const ASSETS_TO_CACHE = [
   './js/candleStructure.js',
   './js/chartEngine.js',
   './js/strikeAdvisor.js',
+  './js/flashScalpSniper.js',
+  './js/websocketClient.js',
   './js/optionChain.js',
   './js/paperBroker.js',
   './js/strategyEngine.js',
@@ -46,8 +48,8 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  // Never cache backend API calls or dynamic market feeds
-  if (event.request.method !== 'GET' || event.request.url.includes('/api/')) {
+  // Never cache backend API calls, live market feeds, or market snapshot JSON
+  if (event.request.method !== 'GET' || event.request.url.includes('/api/') || event.request.url.includes('market_snapshot.json')) {
     return;
   }
 

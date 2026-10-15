@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>BankNifty AlgoEdge Terminal — Intraday Algorithmic Trading Platform</title>
   <meta name="description" content="Institutional-grade BankNifty intraday algorithmic trading platform featuring 9:20 Straddles, VWAP Momentum Scalpers, Live Greeks Option Chain, Backtesting, and Paper Trading simulator.">
   
@@ -17,25 +17,28 @@
   <link rel="apple-touch-icon" href="assets/icon-192.png">
 
   <!-- CSS Stylesheets -->
-  <link rel="stylesheet" href="css/main.css?v=2.9.8">
-  <link rel="stylesheet" href="css/terminal.css?v=2.9.8">
-  <link rel="stylesheet" href="css/strategies.css?v=2.9.8">
-  <link rel="stylesheet" href="css/optionchain.css?v=2.9.8">
+  <link rel="stylesheet" href="css/main.css?v=3.2.0">
+  <link rel="stylesheet" href="css/terminal.css?v=3.2.0">
+  <link rel="stylesheet" href="css/strategies.css?v=3.2.0">
+  <link rel="stylesheet" href="css/optionchain.css?v=3.2.0">
 
   <!-- TradingView Official Library -->
   <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
 </head>
 <body>
 
-  <!-- PWA Instant Update Notification Banner -->
-  <div id="pwa-update-banner" style="display: none; position: fixed; top: 0; left: 0; right: 0; z-index: 99999; background: linear-gradient(90deg, #059669 0%, #0284C7 100%); color: #FFF; padding: 7px 16px; font-family: var(--font-mono); font-size: 0.78rem; font-weight: 700; box-shadow: 0 4px 16px rgba(0,0,0,0.4); align-items: center; justify-content: space-between;">
+  <!-- PWA Instant Update Notification Banner & Auto-Refresh Modal -->
+  <div id="pwa-update-banner" style="display: none; position: fixed; top: 10px; left: 50%; transform: translateX(-50%); width: calc(100% - 24px); max-width: 620px; z-index: 999999; background: linear-gradient(135deg, rgba(6, 78, 59, 0.98) 0%, rgba(8, 14, 26, 0.98) 100%); border: 1.5px solid #10B981; border-radius: 8px; color: #FFF; padding: 10px 14px; font-family: var(--font-mono); font-size: 0.78rem; font-weight: 700; box-shadow: 0 10px 35px rgba(0,0,0,0.85), 0 0 20px rgba(16, 185, 129, 0.45); align-items: center; justify-content: space-between; gap: 10px; backdrop-filter: blur(10px);">
     <div style="display: flex; align-items: center; gap: 8px;">
-      <span>⚡</span>
-      <span>A fresh update for BankNifty AlgoEdge Terminal (v3.0.0) is ready!</span>
+      <span style="font-size: 1.25rem;">⚡</span>
+      <div>
+        <div style="color: #34D399; font-weight: 800; font-family: var(--font-heading); font-size: 0.85rem;">UPDATE AVAILABLE (v3.2.2)</div>
+        <div style="font-size: 0.68rem; color: #CBD5E1;">New Live Spot (₹55,810), Flash Scalp Sniper &amp; Mobile Stabilizer ready!</div>
+      </div>
     </div>
-    <div style="display: flex; gap: 8px;">
-      <button id="btn-update-reload" class="btn btn-sm" style="background: #FFF; color: #065F46; font-weight: 800; padding: 3px 12px; font-size: 0.74rem; border-radius: 4px; border: none; cursor: pointer;">Apply &amp; Reload Now</button>
-      <button id="btn-update-dismiss" class="btn btn-secondary btn-sm" style="padding: 3px 8px; font-size: 0.72rem; color: #E0E7FF; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.2); border-radius: 4px; cursor: pointer;">Dismiss</button>
+    <div style="display: flex; gap: 8px; flex-shrink: 0;">
+      <button id="btn-update-reload" class="btn btn-sm" style="background: linear-gradient(135deg, #10B981 0%, #059669 100%); color: #FFF; font-weight: 800; padding: 5px 14px; font-size: 0.76rem; border-radius: 4px; border: 1px solid #34D399; cursor: pointer; box-shadow: 0 0 10px rgba(16, 185, 129, 0.5);" onclick="window.triggerAppHardRefresh()">🔄 Update &amp; Refresh</button>
+      <button id="btn-update-dismiss" class="btn btn-secondary btn-sm" style="padding: 5px 8px; font-size: 0.72rem; color: #94A3B8; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); border-radius: 4px; cursor: pointer;" onclick="document.getElementById('pwa-update-banner').style.display='none'">✕</button>
     </div>
   </div>
 
@@ -68,18 +71,24 @@
 
       <!-- Live Spot & Header Stats -->
       <div class="header-market-stats">
-        <div class="market-stat-item">
+        <div class="market-stat-item" id="hdr-spot-stat-item">
           <span class="stat-label">BANKNIFTY SPOT</span>
           <div class="stat-value">
-            <span id="hdr-spot-price">50,842.50</span>
-            <span id="hdr-spot-chg" class="stat-change bull">+362.50 (+0.72%)</span>
+            <span id="hdr-spot-price">55,634.55</span>
+            <span id="hdr-spot-chg" class="stat-change bull">+318.55 (+0.58%)</span>
           </div>
         </div>
 
-        <div class="market-stat-item">
-          <span class="stat-label">FUTURES (AUG)</span>
+        <!-- Dedicated WebSocket Latency & Live Feed Status Badge -->
+        <div id="ws-latency-badge" class="ws-badge" title="Click to reconnect WebSocket Streamer" style="cursor: pointer; display: flex; align-items: center; gap: 5px; font-size: 0.70rem; font-weight: 700; font-family: var(--font-mono); padding: 2px 7px; border-radius: 4px; background: rgba(15, 23, 42, 0.7); border: 1px solid var(--border-medium); flex-shrink: 0;">
+          <span class="pulse-dot" style="display:inline-block; width:6px; height:6px; border-radius:50%; background:#10B981;"></span>
+          <span id="ws-badge-text" style="color: #10B981;">⚡ WS: Active</span>
+        </div>
+
+        <div class="market-stat-item" id="hdr-fut-stat-item">
+          <span class="stat-label">FUTURES (CURRENT)</span>
           <div class="stat-value">
-            <span id="hdr-fut-price">50,915.20</span>
+            <span id="hdr-fut-price">55,710.00</span>
           </div>
         </div>
 
@@ -105,6 +114,12 @@
           <span class="landscape-toggle-text">Landscape</span>
         </button>
 
+        <!-- Hard Refresh & Stale Cache Purge Button (Directly Accessible in Both Portrait & Landscape) -->
+        <button id="btn-force-refresh" class="btn btn-secondary btn-sm btn-force-refresh-header" onclick="window.triggerAppHardRefresh()" title="Hard Refresh App &amp; Load Latest Updates (Clears Stale Cache) — Shortcut: Cmd+R / Ctrl+R" style="display: inline-flex !important; align-items: center; gap: 5px; padding: 4px 10px; font-size: 0.72rem; font-weight: 700; border: 1px solid var(--cyan-primary); color: var(--cyan-primary); background: rgba(0, 240, 255, 0.1); border-radius: 4px; cursor: pointer;">
+          <span style="font-size: 13px;">🔄</span>
+          <span class="refresh-btn-text">Refresh</span>
+        </button>
+
         <!-- Live Market Feed vs Algo Simulator Toggle -->
         <div class="sim-speed-selector">
           <button id="btn-market-mode-toggle" class="sim-btn live-feed-btn active" title="Toggle between Live Real-Time Feed and Algo Simulator">🟢 Live Market Feed</button>
@@ -120,12 +135,6 @@
         <button id="btn-pwa-install" class="theme-toggle-btn" title="Install BankNifty AlgoEdge App on Desktop / Mobile" style="border-color: rgba(0, 240, 255, 0.4); color: var(--cyan-primary);">
           <span>📲</span>
           <span id="pwa-install-text">Install App</span>
-        </button>
-
-        <!-- Force Refresh & Update App Button (Works inside installed PWA) -->
-        <button id="btn-force-refresh" class="theme-toggle-btn" title="Force Refresh App &amp; Load Latest Updates (Clears Stale Cache) — Shortcut: Cmd+R / Ctrl+R" style="border-color: rgba(16, 185, 129, 0.45); color: #34D399; font-weight: 700;">
-          <span style="font-size: 13px;">🔄</span>
-          <span>Refresh App</span>
         </button>
 
         <!-- Theme Toggle (Light / Dark Mode) -->
@@ -288,6 +297,12 @@
       </div>
 
       <div class="drawer-footer">
+        <div class="drawer-hard-refresh-wrapper" style="padding: 10px 14px 6px 14px; width: 100%; box-sizing: border-box;">
+          <button id="btn-drawer-refresh" class="btn" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; background: rgba(16, 185, 129, 0.18); border: 1px solid rgba(16, 185, 129, 0.45); color: #34D399; font-weight: 700; padding: 9px 12px; font-size: 0.80rem; border-radius: 6px; cursor: pointer;">
+            <span style="font-size: 14px;">🔄</span>
+            <span>Hard Refresh &amp; Update App (Clear Cache)</span>
+          </button>
+        </div>
         <div class="drawer-footer-stats">
           <span>NSE FEED: <b style="color: var(--bull-green);">REAL-TIME</b></span>
           <span style="color: var(--text-muted);">Press <kbd style="background: #080D1A; border: 1px solid var(--border-medium); padding: 1px 4px; border-radius: 3px; font-size: 10px;">ESC</kbd> to close</span>
@@ -575,6 +590,11 @@
                   🔗 Share All
                 </button>
               </div>
+            </div>
+
+            <!-- ⚡ Flash Scalp Sniper & V-Reversal Highlight Banner & Alert Card -->
+            <div id="flash-scalp-sniper-container" class="flash-scalp-hero-container">
+              <!-- Dynamically Managed by FlashScalpSniper Engine -->
             </div>
 
             <!-- Horizontal Multi-Column Grid for Strike Cards -->
@@ -1049,17 +1069,17 @@ class BankNiftyCustomScalper(Strategy):
                 </select>
               </div>
 
-              <div class="opt-stat opt-stat-call">
-                <span class="opt-stat-lbl">CALL OI</span>
+              <div class="opt-stat opt-stat-call" id="opt-stat-call-wrapper" title="Total Call Open Interest across all strikes (Resistance Ceiling)">
+                <span class="opt-stat-lbl">TOTAL CALL OI</span>
                 <span id="opt-summary-call-oi" class="opt-stat-val" style="color: var(--bull-green);">28.45 L</span>
               </div>
-              <div class="opt-stat opt-stat-put">
-                <span class="opt-stat-lbl">PUT OI</span>
+              <div class="opt-stat opt-stat-put" id="opt-stat-put-wrapper" title="Total Put Open Interest across all strikes (Support Floor)">
+                <span class="opt-stat-lbl">TOTAL PUT OI</span>
                 <span id="opt-summary-put-oi" class="opt-stat-val" style="color: var(--bear-red);">32.18 L</span>
               </div>
-              <div class="opt-stat opt-stat-pain">
+              <div class="opt-stat opt-stat-pain" title="Max Pain: Theoretical strike price where option sellers/writers lose the least">
                 <span class="opt-stat-lbl">MAX PAIN</span>
-                <span id="opt-summary-max-pain" class="opt-stat-val" style="color: var(--cyan-primary);">57,500</span>
+                <span id="opt-summary-max-pain" class="opt-stat-val" style="color: var(--cyan-primary);">55,500</span>
               </div>
             </div>
 
@@ -1075,18 +1095,53 @@ class BankNiftyCustomScalper(Strategy):
             </div>
           </div>
 
-          <!-- Mobile CE / PE Column Segmented Filter -->
-          <div class="opt-mobile-filter-bar" id="opt-mobile-filter-bar">
-            <button type="button" class="opt-filter-btn active" data-opt-side="core">⚡ OI &amp; LTP</button>
-            <button type="button" class="opt-filter-btn" data-opt-side="ce">🟢 Calls (CE)</button>
-            <button type="button" class="opt-filter-btn" data-opt-side="pe">🔴 Puts (PE)</button>
-            <button type="button" class="opt-filter-btn" data-opt-side="greeks">🔬 Greeks</button>
-            <button type="button" class="opt-filter-btn" data-opt-side="all">📊 All</button>
+          <!-- Option Chain View & Column Segmented Filter (Desktop & Mobile) -->
+          <div class="opt-view-filter-bar opt-mobile-filter-bar" id="opt-mobile-filter-bar">
+            <div class="opt-view-label">
+              <span class="opt-view-icon">⚡</span>
+              <span class="opt-view-text">VIEW:</span>
+            </div>
+            <div class="opt-filter-btn-group">
+              <button type="button" class="opt-filter-btn active" data-opt-side="all" title="View Full Option Chain with Greeks, OI &amp; LTP">
+                <span class="btn-icon">📊</span>
+                <span class="btn-text-full">All Columns</span>
+                <span class="btn-text-short">All</span>
+              </button>
+              <button type="button" class="opt-filter-btn" data-opt-side="greeks" title="View Greeks: Delta (Δ), Theta (Θ), Vega (ν), IV (%)">
+                <span class="btn-icon">🔬</span>
+                <span class="btn-text-full">Greeks (Δ, Θ, ν, IV)</span>
+                <span class="btn-text-short">Greeks</span>
+              </button>
+              <button type="button" class="opt-filter-btn" data-opt-side="oichg" title="View OI &amp; % Change in Call/Put Open Interest">
+                <span class="btn-icon">📈</span>
+                <span class="btn-text-full">OI &amp; % Change</span>
+                <span class="btn-text-short">OI % Chg</span>
+              </button>
+              <button type="button" class="opt-filter-btn" data-opt-side="core" title="Minimal Core View: Open Interest &amp; LTP">
+                <span class="btn-icon">⚡</span>
+                <span class="btn-text-full">Core (OI &amp; LTP)</span>
+                <span class="btn-text-short">Core</span>
+              </button>
+              <button type="button" class="opt-filter-btn" data-opt-side="ce" title="Filter Calls (CE) Only">
+                <span class="btn-icon">🟢</span>
+                <span class="btn-text-full">Calls (CE)</span>
+                <span class="btn-text-short">Calls</span>
+              </button>
+              <button type="button" class="opt-filter-btn" data-opt-side="pe" title="Filter Puts (PE) Only">
+                <span class="btn-icon">🔴</span>
+                <span class="btn-text-full">Puts (PE)</span>
+                <span class="btn-text-short">Puts</span>
+              </button>
+            </div>
+            <div class="opt-view-hints">
+              <span class="opt-hint-pill">💡 Click LTP to Chart Strike</span>
+              <span class="opt-hint-pill">Deep ITM Δ ≥ 0.68</span>
+            </div>
           </div>
 
           <!-- Dynamic Option Chain Table -->
           <div class="option-table-container">
-            <table class="option-chain-table view-core">
+            <table class="option-chain-table view-all" id="option-chain-table">
               <thead>
                 <tr class="header-super-group">
                   <th colspan="7" class="header-call-group">CALLS (CE) — BULLISH SIDE</th>
@@ -1094,23 +1149,23 @@ class BankNiftyCustomScalper(Strategy):
                   <th colspan="7" class="header-put-group">PUTS (PE) — BEARISH SIDE</th>
                 </tr>
                 <tr class="header-col-group">
-                  <th class="col-call col-greek">Delta (Δ)</th>
-                  <th class="col-call col-greek">Theta (Θ)</th>
-                  <th class="col-call col-greek">Vega (ν)</th>
-                  <th class="col-call col-iv">IV (%)</th>
-                  <th class="col-call col-oi">Call OI</th>
-                  <th class="col-call col-oichg" style="color: var(--cyan-primary);">OI Chg %</th>
-                  <th class="col-call col-ltp">LTP (₹)</th>
+                  <th class="col-call col-greek col-delta" title="Call Delta (Rate of option price change per point change in underlying)">Delta (Δ)</th>
+                  <th class="col-call col-greek col-theta" title="Call Theta (Expected 1-day time decay)">Theta (Θ)</th>
+                  <th class="col-call col-greek col-vega" title="Call Vega (Sensitivity per 1% change in IV)">Vega (ν)</th>
+                  <th class="col-call col-iv" title="Call Implied Volatility %">IV (%)</th>
+                  <th class="col-call col-oi" title="Call Open Interest (Total active contracts)">Call OI</th>
+                  <th class="col-call col-oichg" style="color: var(--cyan-primary);" title="Call Open Interest % Change Today">OI Chg %</th>
+                  <th class="col-call col-ltp" title="Last Traded Price in ₹">LTP (₹)</th>
 
                   <th class="strike-cell col-strike">Strike Price</th>
 
-                  <th class="col-put col-ltp">LTP (₹)</th>
-                  <th class="col-put col-oichg" style="color: var(--cyan-primary);">OI Chg %</th>
-                  <th class="col-put col-oi">Put OI</th>
-                  <th class="col-put col-iv">IV (%)</th>
-                  <th class="col-put col-greek">Vega (ν)</th>
-                  <th class="col-put col-greek">Theta (Θ)</th>
-                  <th class="col-put col-greek">Delta (Δ)</th>
+                  <th class="col-put col-ltp" title="Last Traded Price in ₹">LTP (₹)</th>
+                  <th class="col-put col-oichg" style="color: var(--cyan-primary);" title="Put Open Interest % Change Today">OI Chg %</th>
+                  <th class="col-put col-oi" title="Put Open Interest (Total active contracts)">Put OI</th>
+                  <th class="col-put col-iv" title="Put Implied Volatility %">IV (%)</th>
+                  <th class="col-put col-greek col-vega" title="Put Vega (Sensitivity per 1% change in IV)">Vega (ν)</th>
+                  <th class="col-put col-greek col-theta" title="Put Theta (Expected 1-day time decay)">Theta (Θ)</th>
+                  <th class="col-put col-greek col-delta" title="Put Delta (Rate of option price change per point change in underlying)">Delta (Δ)</th>
                 </tr>
               </thead>
               <tbody id="option-chain-body">
@@ -1380,6 +1435,39 @@ class BankNiftyCustomScalper(Strategy):
             </button>
           </div>
         </form>
+      </div>
+    </div>
+
+    <!-- Modal: Flash Scalp Impact & Algo Improvement Analysis Studio -->
+    <div id="modal-flash-scalp-analysis" class="modal-overlay" style="display: none;" onclick="if(event.target === this) window.flashScalpSniper.closeAnalysisModal()">
+      <div class="modal-card" style="background: #0B111E; border: 1px solid var(--border-medium); border-radius: 10px; width: 850px; max-width: 95vw; padding: 22px; box-shadow: 0 14px 44px rgba(0,0,0,0.9);">
+        <!-- Modal Header -->
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-subtle); padding-bottom: 12px; margin-bottom: 16px;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 1.3rem;">⚡</span>
+            <div>
+              <h3 style="margin: 0; font-size: 1.05rem; color: #FFF; font-family: var(--font-heading); display: flex; align-items: center; gap: 8px;">
+                FLASH SCALP IMPACT AUDIT &amp; STRATEGY LAB
+                <span class="flash-tag-algo" style="background: rgba(0, 240, 255, 0.15); color: var(--cyan-primary); border: 1px solid rgba(0, 240, 255, 0.3);">Precision Engine</span>
+              </h3>
+              <span style="font-size: 0.72rem; color: var(--text-muted); font-family: var(--font-mono);">
+                Evaluating Positive vs Negative trade outcomes, net P&amp;L impact &amp; tuning algo parameters
+              </span>
+            </div>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <button type="button" class="btn btn-secondary btn-xs" onclick="window.flashScalpSniper.exportAnalysisCSV()" title="Export audit records as CSV">📥 Export CSV</button>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="window.flashScalpSniper.closeAnalysisModal()" style="font-weight: 700;">✕ Close</button>
+          </div>
+        </div>
+
+        <!-- Dynamic Body Injected by FlashScalpSniper -->
+        <div id="flash-analysis-modal-body">
+          <!-- Rendered dynamically by flashScalpSniper.renderAnalysisModalContent() -->
+        </div>
+      </div>
+    </div>
+
     <!-- 4. NSE Trading Holidays Calendar Modal -->
     <div id="modal-holiday-calendar" class="modal-overlay" style="display: none;" onclick="if(event.target === this) window.app.closeHolidayModal()">
       <div class="modal-card" style="max-width: 680px; width: 92%;">
@@ -1416,34 +1504,75 @@ class BankNiftyCustomScalper(Strategy):
   </div>
 
   <!-- External JS Scripts (Versioned to bust browser and Service Worker caches) -->
-  <script src="js/audioEffects.js?v=2.9.8"></script>
-  <script src="js/state.js?v=2.9.8"></script>
-  <script src="js/candleStructure.js?v=2.9.8"></script>
-  <script src="js/chartEngine.js?v=2.9.8"></script>
-  <script src="js/strikeAdvisor.js?v=2.9.8"></script>
-  <script src="js/optionChain.js?v=2.9.8"></script>
-  <script src="js/paperBroker.js?v=2.9.8"></script>
-  <script src="js/strategyEngine.js?v=2.9.8"></script>
-  <script src="js/backtestEngine.js?v=2.9.8"></script>
-  <script src="js/brokerBridge.js?v=2.9.8"></script>
-  <script src="js/app.js?v=2.9.8"></script>
-  <script src="js/websocketClient.js?v=2.9.8"></script>
+  <script src="js/audioEffects.js?v=3.1.2"></script>
+  <script src="js/state.js?v=3.1.2"></script>
+  <script src="js/candleStructure.js?v=3.1.2"></script>
+  <script src="js/chartEngine.js?v=3.1.2"></script>
+  <script src="js/strikeAdvisor.js?v=3.1.2"></script>
+  <script src="js/flashScalpSniper.js?v=3.2.1"></script>
+  <script src="js/optionChain.js?v=3.1.2"></script>
+  <script src="js/paperBroker.js?v=3.1.2"></script>
+  <script src="js/strategyEngine.js?v=3.1.2"></script>
+  <script src="js/backtestEngine.js?v=3.2.0"></script>
+  <script src="js/brokerBridge.js?v=3.2.0"></script>
+  <script src="js/app.js?v=3.2.0"></script>
+  <script src="js/websocketClient.js?v=3.2.0"></script>
 
-  <!-- PWA Service Worker Registration, Auto-Update & Cache Purge -->
+  <!-- PWA Service Worker Registration, Proactive Version Checking & Auto-Refresh Modal -->
   <script>
+    const APP_CURRENT_VERSION = 'v3.2.2';
+
+    // Global hard refresh function available to all buttons and events
+    window.triggerAppHardRefresh = async function() {
+      console.log('🔄 Triggering full application hard refresh & cache purge...');
+      localStorage.setItem('algoedge_app_version', APP_CURRENT_VERSION);
+      try {
+        if (window.caches) {
+          const keys = await caches.keys();
+          await Promise.all(keys.map(k => caches.delete(k)));
+        }
+        if ('serviceWorker' in navigator) {
+          const registrations = await navigator.serviceWorker.getRegistrations();
+          for (let reg of registrations) {
+            await reg.unregister();
+          }
+        }
+      } catch (err) {
+        console.warn('Cache purge note:', err);
+      }
+      const targetUrl = new URL(window.location.href);
+      targetUrl.searchParams.set('reload', Date.now());
+      window.location.replace(targetUrl.toString());
+    };
+
+    // Auto-detect if user is on an older version and pop up the update banner immediately
+    const lastSavedVer = localStorage.getItem('algoedge_app_version');
+    if (!lastSavedVer || lastSavedVer !== APP_CURRENT_VERSION) {
+      setTimeout(() => {
+        const banner = document.getElementById('pwa-update-banner');
+        if (banner) banner.style.display = 'flex';
+      }, 600);
+    }
+
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js?v=2.9.8')
+        navigator.serviceWorker.register('./sw.js?v=3.2.2')
           .then(reg => {
             console.log('⚡ PWA Service Worker Registered:', reg.scope);
             reg.update();
+
+            // If a worker is already waiting to activate
+            if (reg.waiting) {
+              const banner = document.getElementById('pwa-update-banner');
+              if (banner) banner.style.display = 'flex';
+            }
 
             // Detect new Service Worker ready to activate
             reg.addEventListener('updatefound', () => {
               const newWorker = reg.installing;
               if (newWorker) {
                 newWorker.addEventListener('statechange', () => {
-                  if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                  if (newWorker.state === 'installed' || newWorker.state === 'activated') {
                     const banner = document.getElementById('pwa-update-banner');
                     if (banner) banner.style.display = 'flex';
                   }
@@ -1457,7 +1586,7 @@ class BankNiftyCustomScalper(Strategy):
         if (window.caches) {
           caches.keys().then(keys => {
             keys.forEach(k => {
-              if (k !== 'banknifty-algoedge-v3.0.0') {
+              if (k !== 'banknifty-algoedge-v3.2.2') {
                 caches.delete(k);
               }
             });

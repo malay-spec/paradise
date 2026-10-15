@@ -94,6 +94,139 @@
   transition: left 0.3s ease;
 }
 
+/* ==========================================================================
+   OPTION CHAIN VIEW FILTER TOOLBAR (Desktop & Mobile)
+   ========================================================================== */
+.opt-view-filter-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  background: var(--bg-surface, #0B111E);
+  border: 1px solid var(--border-medium, rgba(0, 240, 255, 0.18));
+  border-radius: var(--radius-md, 8px);
+  padding: 6px 12px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+  flex-shrink: 0;
+}
+
+.opt-view-filter-bar::-webkit-scrollbar {
+  display: none;
+}
+
+.opt-view-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: var(--cyan-primary, #00F0FF);
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+  user-select: none;
+}
+
+.opt-filter-btn-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: nowrap;
+}
+
+.opt-filter-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  background: rgba(15, 23, 42, 0.85);
+  border: 1px solid var(--border-medium, rgba(148, 163, 184, 0.2));
+  color: var(--text-secondary, #94A3B8);
+  border-radius: 6px;
+  padding: 5px 12px;
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  user-select: none;
+}
+
+.opt-filter-btn:hover {
+  background: rgba(0, 240, 255, 0.12);
+  border-color: rgba(0, 240, 255, 0.5);
+  color: #FFFFFF;
+  transform: translateY(-1px);
+}
+
+.opt-filter-btn.active {
+  background: rgba(0, 240, 255, 0.22) !important;
+  border-color: var(--cyan-primary, #00F0FF) !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 0 12px rgba(0, 240, 255, 0.4) !important;
+  font-weight: 800;
+}
+
+.opt-filter-btn .btn-text-short {
+  display: none;
+}
+
+.opt-filter-btn .btn-text-full {
+  display: inline;
+}
+
+.opt-view-hints {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.opt-hint-pill {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--text-muted, #64748B);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  padding: 3px 8px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+@media (max-width: 900px) {
+  .opt-view-hints {
+    display: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .opt-view-filter-bar {
+    padding: 6px 8px;
+    gap: 6px;
+    border-radius: 6px;
+    justify-content: flex-start;
+  }
+  .opt-view-label {
+    display: none;
+  }
+  .opt-filter-btn {
+    padding: 5px 8px;
+    font-size: 0.70rem;
+    gap: 3px;
+  }
+  .opt-filter-btn .btn-text-full {
+    display: none;
+  }
+  .opt-filter-btn .btn-text-short {
+    display: inline;
+  }
+}
+
 /* Option Chain Table Layout */
 .option-table-container {
   flex: 1;
@@ -156,6 +289,27 @@
   white-space: nowrap;
 }
 
+/* Specific Greeks and OI styling */
+.col-delta, .col-theta, .col-vega {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: -0.02em;
+}
+
+.col-delta {
+  font-weight: 700;
+}
+
+.col-iv {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.col-oichg {
+  min-width: 64px;
+}
+
 /* Strike Column & In-The-Money (ITM) Highlighting */
 .strike-cell {
   background: var(--bg-surface);
@@ -168,33 +322,63 @@
   z-index: 5;
 }
 
-/* Option Chain View Modes (Core, CE, PE, Greeks, All) */
+/* Option Chain View Modes (All, Greeks, OI % Change, Core, CE Only, PE Only) */
+.option-chain-table.view-all th,
+.option-chain-table.view-all td {
+  display: table-cell;
+}
+
+.option-chain-table.view-greeks .col-oi,
+.option-chain-table.view-greeks .col-oichg {
+  display: none !important;
+}
+.option-chain-table.view-greeks .col-greek,
+.option-chain-table.view-greeks .col-iv,
+.option-chain-table.view-greeks .col-ltp,
+.option-chain-table.view-greeks .col-strike {
+  display: table-cell !important;
+}
+
+.option-chain-table.view-oichg .col-greek,
+.option-chain-table.view-oichg .col-iv {
+  display: none !important;
+}
+.option-chain-table.view-oichg .col-oi,
+.option-chain-table.view-oichg .col-oichg,
+.option-chain-table.view-oichg .col-ltp,
+.option-chain-table.view-oichg .col-strike {
+  display: table-cell !important;
+}
+
 .option-chain-table.view-core .col-greek,
 .option-chain-table.view-core .col-iv,
 .option-chain-table.view-core .col-oichg {
   display: none !important;
+}
+.option-chain-table.view-core .col-oi,
+.option-chain-table.view-core .col-ltp,
+.option-chain-table.view-core .col-strike {
+  display: table-cell !important;
 }
 
 .option-chain-table.filter-ce-only .col-put,
 .option-chain-table.filter-ce-only .header-put-group {
   display: none !important;
 }
-.option-chain-table.filter-ce-only .col-greek {
-  display: none !important;
+.option-chain-table.filter-ce-only .col-call,
+.option-chain-table.filter-ce-only .header-call-group,
+.option-chain-table.filter-ce-only .col-strike {
+  display: table-cell !important;
 }
 
 .option-chain-table.filter-pe-only .col-call,
 .option-chain-table.filter-pe-only .header-call-group {
   display: none !important;
 }
-.option-chain-table.filter-pe-only .col-greek {
-  display: none !important;
-}
-
-.option-chain-table.view-greeks .col-oi,
-.option-chain-table.view-greeks .col-oichg,
-.option-chain-table.view-greeks .col-ltp {
-  display: none !important;
+.option-chain-table.filter-pe-only .col-put,
+.option-chain-table.filter-pe-only .header-put-group,
+.option-chain-table.filter-pe-only .col-strike {
+  display: table-cell !important;
 }
 
 .strike-atm-row td {

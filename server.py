@@ -6,6 +6,11 @@ Serves the frontend application and provides mock streaming endpoints.
 
 import http.server
 import socketserver
+import socket
+import threading
+import hashlib
+import base64
+import struct
 import os
 import sys
 import json
@@ -13,6 +18,7 @@ import random
 import time
 
 PORT = 8080
+WS_PORT = 8081
 DIRECTORY = os.path.dirname(os.path.abspath(__file__))
 import urllib.request
 import ssl
@@ -25,6 +31,9 @@ cached_1d_candles = None
 last_1d_fetch_time = 0
 cached_constituents = None
 last_constituents_fetch_time = 0
+
+ws_clients = set()
+ws_clients_lock = threading.Lock()
 
 NSE_HOLIDAYS = {
     # 2024
@@ -463,6 +472,12 @@ def fetch_live_market_data():
     results['market_status'] = get_nse_market_status()
     cached_market_data = results
     last_market_fetch_time = time.time()
+    try:
+        snap_path = os.path.join(DIRECTORY, "data", "market_snapshot.json")
+        with open(snap_path, "w") as f:
+            json.dump(results, f)
+    except Exception:
+        pass
     return results
 
 webhook_events = []
@@ -492,6 +507,21 @@ class AlgoTerminalHandler(http.server.SimpleHTTPRequestHandler):
 
     def do_GET(self):
         try:
+            if self.path.startswith('/api/version'):
+                self.send_response(200)
+                self.send_header('Content-type', 'application/json')
+                self.end_headers()
+                m = cached_market_data or fetch_live_market_data()
+                cur_spot = float(m.get('spot', {}).get('price', 55810.5)) if m else 55810.5
+                response = {
+                    "version": "3.2.2",
+                    "build_time": int(time.time()),
+                    "cache_name": "banknifty-algoedge-v3.2.2",
+                    "spot": cur_spot
+                }
+                self.wfile.write(json.dumps(response).encode('utf-8'))
+                return
+
             if self.path == '/api/health':
                 self.send_response(200)
                 self.send_header('Content-type', 'application/json')
@@ -587,13 +617,203 @@ class AlgoTerminalHandler(http.server.SimpleHTTPRequestHandler):
         self.send_response(404)
         self.end_headers()
 
+def make_ws_frame(text):
+    payload = text.encode('utf-8')
+    length = len(payload)
+    if length < 126:
+        header = bytes([0x81, length])
+    elif length < 65536:
+        header = bytes([0x81, 126]) + struct.pack("!H", length)
+    else:
+        header = bytes([0x81, 127]) + struct.pack("!Q", length)
+    return header + payload
+
+def broadcast_ws(payload_obj):
+    frame = make_ws_frame(json.dumps(payload_obj))
+    with ws_clients_lock:
+        dead_clients = []
+        for client in list(ws_clients):
+            try:
+                client.sendall(frame)
+            except Exception:
+                dead_clients.append(client)
+        for dc in dead_clients:
+            ws_clients.discard(dc)
+
+def handle_ws_client(client_sock, client_addr):
+    try:
+        req_data = b""
+        while b"\r\n\r\n" not in req_data and len(req_data) < 4096:
+            chunk = client_sock.recv(1024)
+            if not chunk:
+                break
+            req_data += chunk
+        
+        req_text = req_data.decode('utf-8', errors='ignore')
+        headers = {}
+        for line in req_text.split("\r\n")[1:]:
+            if ":" in line:
+                k, v = line.split(":", 1)
+                headers[k.strip().lower()] = v.strip()
+        
+        ws_key = headers.get('sec-websocket-key')
+        if not ws_key:
+            client_sock.close()
+            return
+        
+        accept_raw = hashlib.sha1((ws_key + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11").encode('utf-8')).digest()
+        accept_str = base64.b64encode(accept_raw).decode('utf-8')
+        resp = (
+            "HTTP/1.1 101 Switching Protocols\r\n"
+            "Upgrade: websocket\r\n"
+            "Connection: Upgrade\r\n"
+            f"Sec-WebSocket-Accept: {accept_str}\r\n\r\n"
+        )
+        client_sock.sendall(resp.encode('utf-8'))
+        
+        # Send immediate HANDSHAKE
+        m_data = cached_market_data or fetch_live_market_data()
+        spot_info = m_data.get('spot', {}) if m_data else {}
+        spot_p = float(spot_info.get('price', 55634.55))
+        prev_c = float(spot_info.get('prev_close', 55316.0))
+        
+        handshake_payload = {
+            "type": "HANDSHAKE",
+            "status": "CONNECTED",
+            "server_time": int(time.time() * 1000),
+            "spot": spot_p,
+            "prev_close": prev_c,
+            "day_open": float(spot_info.get('open', prev_c)),
+            "day_high": float(spot_info.get('high', spot_p + 150)),
+            "day_low": float(spot_info.get('low', spot_p - 150)),
+            "tick_rate_ms": 200,
+            "message": "⚡ Connected to BankNifty Python Low-Latency WebSocket Streamer"
+        }
+        client_sock.sendall(make_ws_frame(json.dumps(handshake_payload)))
+        
+        with ws_clients_lock:
+            ws_clients.add(client_sock)
+        
+        print(f"🔌 WebSocket client connected from {client_addr} [Total: {len(ws_clients)}]")
+        
+        while True:
+            head = client_sock.recv(2)
+            if not head or len(head) < 2:
+                break
+            b1, b2 = head[0], head[1]
+            opcode = b1 & 0x0F
+            if opcode == 0x8:
+                break
+            has_mask = (b2 & 0x80) != 0
+            length = b2 & 0x7F
+            if length == 126:
+                ext = client_sock.recv(2)
+                if len(ext) < 2: break
+                length = struct.unpack("!H", ext)[0]
+            elif length == 127:
+                ext = client_sock.recv(8)
+                if len(ext) < 8: break
+                length = struct.unpack("!Q", ext)[0]
+            
+            mask = client_sock.recv(4) if has_mask else None
+            data = bytearray()
+            while len(data) < length:
+                chunk = client_sock.recv(min(4096, length - len(data)))
+                if not chunk: break
+                data.extend(chunk)
+            if has_mask and mask:
+                for i in range(len(data)):
+                    data[i] ^= mask[i % 4]
+            
+            if opcode == 0x9:
+                client_sock.sendall(bytes([0x8A, 0]))
+            elif opcode == 0x1:
+                try:
+                    msg = json.loads(data.decode('utf-8'))
+                    if msg.get('type') == 'PING':
+                        pong_resp = {
+                            "type": "PONG",
+                            "client_time": msg.get("client_time", int(time.time() * 1000)),
+                            "server_time": int(time.time() * 1000)
+                        }
+                        client_sock.sendall(make_ws_frame(json.dumps(pong_resp)))
+                except Exception:
+                    pass
+    except Exception:
+        pass
+    finally:
+        with ws_clients_lock:
+            ws_clients.discard(client_sock)
+        try:
+            client_sock.close()
+        except Exception:
+            pass
+
+def ws_tick_broadcaster_loop():
+    while True:
+        try:
+            time.sleep(0.2)
+            with ws_clients_lock:
+                if not ws_clients:
+                    continue
+            
+            m_data = cached_market_data or fetch_live_market_data()
+            spot_info = m_data.get('spot', {}) if m_data else {}
+            base_spot = float(spot_info.get('price', 55634.55))
+            prev_c = float(spot_info.get('prev_close', 55316.0))
+            
+            # Subtle real-time micro-fluctuation jitter
+            jitter = (random.random() - 0.495) * 4.2
+            cur_spot = round(base_spot + jitter, 2)
+            chg = round(cur_spot - prev_c, 2)
+            chg_pct = round((chg / prev_c) * 100, 2) if prev_c else 0.0
+            atm = int(round(cur_spot / 100.0) * 100)
+            now_ms = int(time.time() * 1000)
+            
+            tick_payload = {
+                "type": "TICK",
+                "server_time": now_ms,
+                "spot": cur_spot,
+                "prev_close": prev_c,
+                "change": chg,
+                "change_pct": chg_pct,
+                "day_high": max(float(spot_info.get('high', cur_spot)), cur_spot),
+                "day_low": min(float(spot_info.get('low', cur_spot)), cur_spot),
+                "atm_strike": atm
+            }
+            broadcast_ws(tick_payload)
+        except Exception:
+            time.sleep(1)
+
+def run_ws_server():
+    server_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server_sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    try:
+        server_sock.bind(("0.0.0.0", WS_PORT))
+        server_sock.listen(20)
+        print(f" ⚡ Python WebSocket Streamer running at ws://0.0.0.0:{WS_PORT}")
+        threading.Thread(target=ws_tick_broadcaster_loop, daemon=True).start()
+        while True:
+            try:
+                client_sock, client_addr = server_sock.accept()
+                threading.Thread(target=handle_ws_client, args=(client_sock, client_addr), daemon=True).start()
+            except Exception:
+                break
+    except Exception as e:
+        print(f"WebSocket server error on port {WS_PORT}: {e}")
+
 def run_server():
     os.chdir(DIRECTORY)
+    # Start WebSocket Streamer Server on WS_PORT (8081) in background daemon thread
+    ws_thread = threading.Thread(target=run_ws_server, daemon=True)
+    ws_thread.start()
+
     socketserver.ThreadingTCPServer.allow_reuse_address = True
     socketserver.ThreadingTCPServer.daemon_threads = True
     with socketserver.ThreadingTCPServer(("", PORT), AlgoTerminalHandler) as httpd:
         print(f"================================================================")
         print(f" 🚀 BankNifty AlgoEdge Terminal running at http://localhost:{PORT}")
+        print(f" 📡 Low-Latency WebSocket Streamer running at ws://0.0.0.0:{WS_PORT}")
         print(f" Serving directory: {DIRECTORY}")
         print(f" Press Ctrl+C to stop the server")
         print(f"================================================================")

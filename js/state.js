@@ -8,11 +8,12 @@ class AppState {
 
     // Market Data (Calibrated to Live NSE BankNifty Feed)
     this.symbol = "BANKNIFTY";
-    this.spotPrice = 55256.65;
-    this.prevClose = 54515.05;
-    this.dayHigh = 55419.30;
-    this.dayLow = 54617.20;
-    this.futuresPrice = 55340.00;
+    this.spotPrice = 55634.55;
+    this._anchorSpotPrice = 55634.55;
+    this.prevClose = 55316.00;
+    this.dayHigh = 56065.15;
+    this.dayLow = 55279.00;
+    this.futuresPrice = 55710.00;
     this.indiaVix = 14.38;
     this.vixChange = +2.61;
     this.lotSize = 30; // Current NSE BankNifty Lot Size (30 qty/lot)
@@ -454,10 +455,9 @@ class AppState {
   calculateBlackScholes(spot, strike, type, daysToExpiry = null, iv = null) {
     const dte = (daysToExpiry !== null && daysToExpiry !== undefined) ? daysToExpiry : this.getDaysToExpiry();
     const T = Math.max(0.0005, dte / 365.0);
-    // BankNifty option IV trades at ~1.31x beta to India VIX (typically ~14.5% - 16.5%)
-    const rawVix = parseFloat(this.indiaVix) || 11.23;
-    const bankniftyIv = Math.max(14.5, rawVix * 1.31);
-    const baseIv = (iv !== null && iv !== undefined) ? parseFloat(iv) : bankniftyIv;
+    // BankNifty ATM IV directly tracks India VIX (~13.5% - 15.0%, exactly 14.27% on Zerodha)
+    const rawVix = parseFloat(this.indiaVix) || 14.25;
+    const baseIv = (iv !== null && iv !== undefined) ? parseFloat(iv) : rawVix;
     const optType = (type || 'CE').toString().trim().toUpperCase();
     const strikeNum = parseFloat(strike) || 55000;
     const spotNum = parseFloat(spot) || (this.spotPrice || 55050);
@@ -466,9 +466,9 @@ class AppState {
     const m = Math.log(strikeNum / spotNum);
     let skewIv = baseIv;
     if (optType === 'PE') {
-      skewIv = baseIv + Math.max(-2, Math.min(6, -m * 8.0));
+      skewIv = baseIv + Math.max(-1.5, Math.min(3.5, -m * 5.0));
     } else {
-      skewIv = baseIv + Math.max(-2, Math.min(5, m * 6.0));
+      skewIv = baseIv + Math.max(-1.5, Math.min(3.0, m * 4.0));
     }
     const sigma = Math.max(0.06, skewIv / 100.0);
     const r = 0.065; // 6.5% RBI risk-free rate
@@ -512,9 +512,20 @@ class AppState {
     if (!spotCandles5m || spotCandles5m.length === 0) return;
 
     this.candles[instKey] = { "1m": [], "5m": [], "10m": [], "15m": [], "30m": [] };
-    const rawVix = parseFloat(this.indiaVix) || 11.23;
-    const iv = Math.max(14.5, rawVix * 1.31);
-    const dte = this.getDaysToExpiry();
+    const rawVix = parseFloat(this.indiaVix) || 14.25;
+    const iv = rawVix;
+
+    // Target expiry timestamp in ms (15:30 IST = 10:00 UTC)
+    if (!this.selectedExpiry || !this.selectedExpiry.key) {
+      if (!this.availableExpiries || this.availableExpiries.length === 0) {
+        this.availableExpiries = this.generateRollingExpiries();
+      }
+      this.selectedExpiry = this.availableExpiries[0];
+    }
+    const expKey = this.selectedExpiry.key; // "YYYY-MM-DD"
+    const [expY, expM, expD] = expKey.split('-').map(Number);
+    const expUtcMs = Date.UTC(expY, expM - 1, expD, 10, 0, 0);
+    const nowUtcMs = Date.now();
 
     const opt5m = [];
     let cumVol = 0;
@@ -527,27 +538,37 @@ class AppState {
       const spotHigh = (isLast && this.spotPrice) ? Math.max(sc.high, this.spotPrice) : sc.high;
       const spotLow = (isLast && this.spotPrice) ? Math.min(sc.low, this.spotPrice) : sc.low;
 
+      // Compute precise DTE at the exact moment of this historical candle (time lapse / decay effect!)
+      let candleMs = sc.timestamp;
+      if (!candleMs && sc.date) {
+        candleMs = new Date(`${sc.date}T${sc.time || '12:00'}:00+05:30`).getTime();
+      }
+      if (!candleMs || isNaN(candleMs)) candleMs = nowUtcMs;
+
+      const candleDiffMs = expUtcMs - candleMs;
+      const candleDte = Math.max(0.04, Math.round((candleDiffMs / (1000 * 3600 * 24)) * 100) / 100);
+
       let premOpen, premClose, premHigh, premLow;
       if (type === 'PE') {
-        premOpen = this.calculateBlackScholes(spotOpen, strike, 'PE', dte, iv);
-        premClose = this.calculateBlackScholes(spotClose, strike, 'PE', dte, iv);
+        premOpen = this.calculateBlackScholes(spotOpen, strike, 'PE', candleDte, iv);
+        premClose = this.calculateBlackScholes(spotClose, strike, 'PE', candleDte, iv);
         // Inverse physics: spot trough drives Put high, spot peak drives Put low
-        const highCand = this.calculateBlackScholes(spotLow, strike, 'PE', dte, iv);
-        const lowCand = this.calculateBlackScholes(spotHigh, strike, 'PE', dte, iv);
+        const highCand = this.calculateBlackScholes(spotLow, strike, 'PE', candleDte, iv);
+        const lowCand = this.calculateBlackScholes(spotHigh, strike, 'PE', candleDte, iv);
         premHigh = Math.max(premOpen, premClose, highCand);
         premLow = Math.min(premOpen, premClose, lowCand);
       } else if (type === 'CE') {
-        premOpen = this.calculateBlackScholes(spotOpen, strike, 'CE', dte, iv);
-        premClose = this.calculateBlackScholes(spotClose, strike, 'CE', dte, iv);
-        const highCand = this.calculateBlackScholes(spotHigh, strike, 'CE', dte, iv);
-        const lowCand = this.calculateBlackScholes(spotLow, strike, 'CE', dte, iv);
+        premOpen = this.calculateBlackScholes(spotOpen, strike, 'CE', candleDte, iv);
+        premClose = this.calculateBlackScholes(spotClose, strike, 'CE', candleDte, iv);
+        const highCand = this.calculateBlackScholes(spotHigh, strike, 'CE', candleDte, iv);
+        const lowCand = this.calculateBlackScholes(spotLow, strike, 'CE', candleDte, iv);
         premHigh = Math.max(premOpen, premClose, highCand);
         premLow = Math.min(premOpen, premClose, lowCand);
       } else if (type === 'STRADDLE') {
-        const ceO = this.calculateBlackScholes(spotOpen, strike, 'CE', dte, iv);
-        const peO = this.calculateBlackScholes(spotOpen, strike, 'PE', dte, iv);
-        const ceC = this.calculateBlackScholes(spotClose, strike, 'CE', dte, iv);
-        const peC = this.calculateBlackScholes(spotClose, strike, 'PE', dte, iv);
+        const ceO = this.calculateBlackScholes(spotOpen, strike, 'CE', candleDte, iv);
+        const peO = this.calculateBlackScholes(spotOpen, strike, 'PE', candleDte, iv);
+        const ceC = this.calculateBlackScholes(spotClose, strike, 'CE', candleDte, iv);
+        const peC = this.calculateBlackScholes(spotClose, strike, 'PE', candleDte, iv);
         premOpen = ceO + peO;
         premClose = ceC + peC;
         premHigh = Math.max(premOpen, premClose) + Math.abs(spotHigh - spotLow) * 0.12;
@@ -894,6 +915,7 @@ class AppState {
 
     // Always accept the real market spot price!
     this.spotPrice = incomingPrice;
+    this._anchorSpotPrice = incomingPrice;
     this._hasSyncedRealFeed = true;
 
     this.futuresPrice = spotObj.futures || this.futuresPrice || (this.spotPrice + 85.5);

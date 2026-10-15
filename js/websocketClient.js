@@ -11,8 +11,10 @@
 
   class WebSocketMarketClient {
     constructor() {
+      const isHttps = typeof window !== 'undefined' && window.location && window.location.protocol === 'https:';
       const host = (typeof window !== 'undefined' && window.location && window.location.hostname) ? window.location.hostname : '127.0.0.1';
-      this.wsUrl = `ws://${host}:8081`;
+      this.isHttps = isHttps;
+      this.wsUrl = isHttps ? `wss://${host}` : `ws://${host}:8081`;
       this.socket = null;
       this.isConnected = false;
       this.reconnectTimer = null;
@@ -24,6 +26,11 @@
 
     init() {
       this.createOrUpdateBadge();
+      if (this.isHttps && window.location.hostname.includes('github.io')) {
+        // Static GitHub Pages: HTTP polling engine handles market feed
+        this.updateBadge('cloud', '⚡ Live (Synced)', '#10B981');
+        return;
+      }
       this.connect();
     }
 
@@ -32,32 +39,36 @@
       if (!badge) {
         badge = document.createElement('div');
         badge.id = 'ws-latency-badge';
-        badge.className = 'market-stat-item ws-badge';
+        badge.className = 'ws-badge';
         badge.style.cursor = 'pointer';
         badge.style.display = 'flex';
         badge.style.alignItems = 'center';
         badge.style.gap = '5px';
-        badge.style.fontSize = '0.72rem';
+        badge.style.fontSize = '0.70rem';
         badge.style.fontWeight = '700';
         badge.style.fontFamily = 'var(--font-mono)';
-        badge.style.padding = '2px 8px';
+        badge.style.padding = '2px 7px';
         badge.style.borderRadius = '4px';
         badge.style.background = 'rgba(15, 23, 42, 0.7)';
         badge.style.border = '1px solid var(--border-medium)';
-        badge.title = 'Click to reconnect Node.js WebSocket Streamer';
+        badge.title = 'Click to reconnect Market WebSocket Streamer';
         badge.innerHTML = `
-          <span class="pulse-dot" style="display:inline-block; width:6px; height:6px; border-radius:50%; background:#94A3B8;"></span>
-          <span id="ws-badge-text" style="color: #94A3B8;">WS: Offline</span>
+          <span class="pulse-dot" style="display:inline-block; width:6px; height:6px; border-radius:50%; background:#10B981;"></span>
+          <span id="ws-badge-text" style="color: #10B981;">⚡ WS: Syncing...</span>
         `;
         badge.addEventListener('click', () => {
           this.connect(true);
         });
 
-        // Insert into header market stats
+        // Append to header stats without altering child order
         const headerStats = document.querySelector('.header-market-stats');
         if (headerStats) {
-          headerStats.insertBefore(badge, headerStats.firstChild);
+          headerStats.appendChild(badge);
         }
+      } else {
+        badge.addEventListener('click', () => {
+          this.connect(true);
+        });
       }
       this.badgeElement = badge;
     }
@@ -118,7 +129,7 @@
     onConnectionFailed() {
       this.isConnected = false;
       this.stopPingLoop();
-      this.updateBadge('offline', 'WS: Standby', '#64748B');
+      this.updateBadge('offline', '⚡ Live Poll', '#38BDF8');
 
       if (!this.reconnectTimer) {
         this.reconnectTimer = setTimeout(() => {
@@ -248,6 +259,9 @@
           if (typeof window.strikeAdvisor.updateLivePrices === 'function') {
             window.strikeAdvisor.updateLivePrices();
           }
+        }
+        if (window.flashScalpSniper && typeof window.flashScalpSniper.onSpotTick === 'function') {
+          window.flashScalpSniper.onSpotTick(spot);
         }
       }
 

@@ -1320,14 +1320,18 @@ class ChartEngine {
     const candleWidth = chartWidth / totalSlots;
     let idx = Math.floor(this.mouseX / candleWidth);
 
-    if (this.mouseX >= 0 && this.mouseX <= chartWidth) {
-      idx = Math.max(0, Math.min(visibleCandles.length - 1, idx));
-      const c = visibleCandles[idx];
-      const actualIdx = startIdx + idx;
-      this.updateLegendValues(c, actualIdx);
-    } else if (this.mouseX > chartWidth) {
-      const idx = visibleCandles.length - 1;
-      this.updateLegendValues(visibleCandles[idx], startIdx + idx);
+    if (this.mouseX >= 0 && this.mouseX <= chartWidth && this.mouseY >= 0 && this.mouseY <= this.height) {
+      if (idx >= 0 && idx < visibleCandles.length) {
+        const c = visibleCandles[idx];
+        const actualIdx = startIdx + idx;
+        this.updateLegendValues(c, actualIdx, true);
+      } else {
+        const idxLast = visibleCandles.length - 1;
+        this.updateLegendValues(visibleCandles[idxLast], startIdx + idxLast, false);
+      }
+    } else {
+      const idxLast = visibleCandles.length - 1;
+      this.updateLegendValues(visibleCandles[idxLast], startIdx + idxLast, false);
     }
   }
 
@@ -1337,11 +1341,11 @@ class ChartEngine {
       return;
     }
     if (this.candles.length > 0) {
-      this.updateLegendValues(this.candles[this.candles.length - 1], this.candles.length - 1);
+      this.updateLegendValues(this.candles[this.candles.length - 1], this.candles.length - 1, false);
     }
   }
 
-  updateLegendValues(c, candleIdx = -1) {
+  updateLegendValues(c, candleIdx = -1, isHoveringCandle = false) {
     if (!c) return;
     let el = this.legendId ? document.getElementById(this.legendId) : null;
     if (!el && this.canvas && this.canvas.parentElement) {
@@ -1372,7 +1376,9 @@ class ChartEngine {
     const changePct = openVal > 0 ? (change / openVal) * 100 : 0;
     const sign = change >= 0 ? '+' : '';
 
-    const instMeta = this.instrumentMeta || window.appState.getActiveInstrumentMeta();
+    const instMeta = (window.appState && typeof window.appState.getActiveInstrumentMeta === 'function') 
+      ? window.appState.getActiveInstrumentMeta() 
+      : (this.instrumentMeta || { name: 'BANKNIFTY Spot', symbol: 'BANKNIFTY', unit: '₹' });
     const unit = instMeta.unit || '₹';
     const targetIdx = (candleIdx >= 0 && candleIdx < this.candles.length) ? candleIdx : (this.candles.length - 1);
 
@@ -1380,7 +1386,7 @@ class ChartEngine {
     let vwapInfo = '';
     if (window.appState.indicators.vwap) {
       const vwapVal = c.vwap || (this.candles[targetIdx] && this.candles[targetIdx].vwap);
-      vwapInfo = `VWAP: <b class="legend-val" style="color: var(--cyan-primary); font-weight: 700;">${vwapVal ? unit + vwapVal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-'}</b>`;
+      vwapInfo = `<span class="legend-item">VWAP: <b class="legend-val" style="color: var(--cyan-primary); font-weight: 700;">${vwapVal ? unit + vwapVal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-'}</b></span>`;
     }
 
     // 2. 9 EMA Info (Amber / Yellow)
@@ -1389,7 +1395,7 @@ class ChartEngine {
       const ema9Arr = this.calculateEMAs(this.candles, 9);
       const ema9Val = ema9Arr[targetIdx] !== undefined ? ema9Arr[targetIdx] : ema9Arr[ema9Arr.length - 1];
       if (ema9Val !== null && ema9Val !== undefined) {
-        ema9Info = `9 EMA: <b class="legend-val" style="color: #F59E0B; font-weight: 700;">${unit}${ema9Val.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</b>`;
+        ema9Info = `<span class="legend-item">9 EMA: <b class="legend-val" style="color: #F59E0B; font-weight: 700;">${unit}${ema9Val.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</b></span>`;
       }
     }
 
@@ -1399,7 +1405,7 @@ class ChartEngine {
       const ema21Arr = this.calculateEMAs(this.candles, 21);
       const ema21Val = ema21Arr[targetIdx] !== undefined ? ema21Arr[targetIdx] : ema21Arr[ema21Arr.length - 1];
       if (ema21Val !== null && ema21Val !== undefined) {
-        ema21Info = `21 EMA: <b class="legend-val" style="color: #A855F7; font-weight: 700;">${unit}${ema21Val.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</b>`;
+        ema21Info = `<span class="legend-item">21 EMA: <b class="legend-val" style="color: #A855F7; font-weight: 700;">${unit}${ema21Val.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</b></span>`;
       }
     }
 
@@ -1409,7 +1415,7 @@ class ChartEngine {
       const ema50Arr = this.calculateEMAs(this.candles, 50);
       const ema50Val = ema50Arr[targetIdx] !== undefined ? ema50Arr[targetIdx] : ema50Arr[ema50Arr.length - 1];
       if (ema50Val !== null && ema50Val !== undefined) {
-        ema50Info = `50 EMA: <b class="legend-val" style="color: #EAB308; font-weight: 700;">${unit}${ema50Val.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</b>`;
+        ema50Info = `<span class="legend-item">50 EMA: <b class="legend-val" style="color: #EAB308; font-weight: 700;">${unit}${ema50Val.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</b></span>`;
       }
     }
 
@@ -1420,7 +1426,7 @@ class ChartEngine {
       const st = stArr[targetIdx] || stArr[stArr.length - 1];
       if (st) {
         const isStBull = st.trend === 1;
-        stInfo = `ST(10,1): <b class="legend-val ${isStBull ? 'bull' : 'bear'}">${unit}${st.value.toFixed(1)} (${isStBull ? 'BULL' : 'BEAR'})</b>`;
+        stInfo = `<span class="legend-item">ST(10,1): <b class="legend-val ${isStBull ? 'bull' : 'bear'}">${unit}${st.value.toFixed(1)} (${isStBull ? 'BULL' : 'BEAR'})</b></span>`;
       }
     }
 
@@ -1430,7 +1436,7 @@ class ChartEngine {
       const bbArr = this.calculateBollingerBands(this.candles, 20, 2.0);
       const bb = bbArr[targetIdx] || bbArr[bbArr.length - 1];
       if (bb) {
-        bbInfo = `BB(20,2): <b class="legend-val" style="color: #38BDF8;">UB:${unit}${bb.upper.toFixed(1)}</b> <b class="legend-val" style="color: #F59E0B;">MB:${unit}${bb.middle.toFixed(1)}</b> <b class="legend-val" style="color: #A78BFA;">LB:${unit}${bb.lower.toFixed(1)}</b>`;
+        bbInfo = `<span class="legend-item" style="white-space: nowrap;">BB(20,2): <b class="legend-val" style="color: #38BDF8;">UB:${unit}${bb.upper.toFixed(1)}</b> <b class="legend-val" style="color: #F59E0B;">MB:${unit}${bb.middle.toFixed(1)}</b> <b class="legend-val" style="color: #A78BFA;">LB:${unit}${bb.lower.toFixed(1)}</b></span>`;
       }
     }
 
@@ -1441,20 +1447,21 @@ class ChartEngine {
       const rsiVal = rsiArr[targetIdx] !== undefined ? rsiArr[targetIdx] : rsiArr[rsiArr.length - 1];
       if (rsiVal !== null && rsiVal !== undefined) {
         const rsiColor = rsiVal >= 70 ? 'var(--bear-red)' : (rsiVal <= 30 ? 'var(--bull-green)' : 'var(--cyan-primary)');
-        rsiInfo = `RSI(14): <b class="legend-val" style="color: ${rsiColor}; font-weight: 700;">${rsiVal.toFixed(1)}</b>`;
+        rsiInfo = `<span class="legend-item" style="white-space: nowrap;">RSI(14): <b class="legend-val" style="color: ${rsiColor}; font-weight: 700;">${rsiVal.toFixed(1)}</b></span>`;
       }
     }
 
-    // 7. Candlestick Structure & Pattern Info
+    // 7. Candlestick Structure & Pattern Info (Only shown when hovering directly over a candlestick)
     let structureInfo = '';
-    if (window.candleStructureAnalyzer && this.candles.length > 0) {
+    if (isHoveringCandle && window.candleStructureAnalyzer && this.candles.length > 0) {
       const struct = window.candleStructureAnalyzer.getStructureScore(this.candles.slice(0, targetIdx + 1));
-      if (struct) {
+      if (struct && struct.patternName && struct.patternName !== 'No Candle Data') {
         const structColor = struct.score > 5 ? 'var(--bull-green)' : (struct.score < -5 ? 'var(--bear-red)' : 'var(--cyan-primary)');
-        structureInfo = `<span class="legend-struct-badge" style="display: inline-flex; align-items: center; gap: 4px; background: rgba(13, 20, 36, 0.85); padding: 1px 6px; border-radius: 4px; border: 1px solid rgba(0, 240, 255, 0.25); margin-left: 4px;">
+        const mktStruct = struct.marketStructure && struct.marketStructure !== 'N/A' ? ` · ${struct.marketStructure}` : '';
+        structureInfo = `<span class="legend-struct-badge">
           <span style="color: #FDE047; font-weight: 700; font-size: 0.9em;">🕯️</span>
           <b style="color: ${structColor}; font-weight: 700;">${struct.patternName}</b>
-          <span style="color: var(--text-muted); font-size: 0.85em;">· ${struct.marketStructure}</span>
+          <span style="color: var(--text-muted); font-size: 0.85em;">${mktStruct}</span>
         </span>`;
       }
     }
@@ -1468,32 +1475,42 @@ class ChartEngine {
       ? `📅 ${c.date || c.time} (Daily Session)` 
       : `📅 ${c.date || ''}  ⏰ ${c.time || ''} IST`;
 
-    const isMobile = window.innerWidth <= 960 || (this.height && this.height < 400);
+    const isMobile = window.innerWidth <= 768 || (this.width && this.width < 380);
     if (isMobile) {
       el.innerHTML = `
-        <span class="legend-symbol" style="color: var(--cyan-primary); font-weight: 800;">${instMeta.name} [${this.timeframe}]</span>
-        <span class="legend-datetime" style="color: #FDE047; font-weight: 700; margin: 0 4px; font-size: 0.88em;">${dtLabel}</span>
-        <span class="legend-ohlc">
-          O:<b class="legend-val" style="color: #E2E8F0;">${formattedOpen}</b>
-          H:<b class="legend-val" style="color: #34D399;">${formattedHigh}</b>
-          L:<b class="legend-val" style="color: #F87171;">${formattedLow}</b>
-          C:<b class="legend-val ${chgClass}; font-weight: 800;">${formattedClose}</b>
-          <b class="legend-val ${chgClass}" style="font-size: 0.90em;">(${sign}${changePct.toFixed(2)}%)</b>
-        </span>
+        <div class="legend-row legend-title-row">
+          <span class="legend-symbol" style="color: var(--cyan-primary); font-weight: 800;">${instMeta.name} [${this.timeframe}]</span>
+          <span class="legend-datetime" style="color: #FDE047; font-weight: 700; margin: 0 4px; font-size: 0.88em;">${dtLabel}</span>
+          ${structureInfo}
+        </div>
+        <div class="legend-row legend-data-row">
+          <span class="legend-ohlc">
+            O:<b class="legend-val" style="color: #E2E8F0;">${formattedOpen}</b>
+            H:<b class="legend-val" style="color: #34D399;">${formattedHigh}</b>
+            L:<b class="legend-val" style="color: #F87171;">${formattedLow}</b>
+            C:<b class="legend-val ${chgClass}; font-weight: 800;">${formattedClose}</b>
+            <b class="legend-val ${chgClass}" style="font-size: 0.90em;">(${sign}${changePct.toFixed(2)}%)</b>
+          </span>
+        </div>
       `;
       return;
     }
 
     el.innerHTML = `
-      <span class="legend-symbol" style="color: var(--cyan-primary); font-weight: 800;">${instMeta.name} [${this.timeframe}]</span>
-      <span class="legend-datetime" style="color: #FDE047; font-weight: 700; margin: 0 6px; font-size: 0.9em;">${dtLabel}</span>
-      <span class="legend-ohlc">
-        O: <b class="legend-val" style="color: #E2E8F0; font-weight: 700;">${formattedOpen}</b>
-        H: <b class="legend-val" style="color: #34D399; font-weight: 700;">${formattedHigh}</b>
-        L: <b class="legend-val" style="color: #F87171; font-weight: 700;">${formattedLow}</b>
-        C: <b class="legend-val ${chgClass}" style="font-weight: 700;">${formattedClose}</b>
-        <b class="legend-val ${chgClass}" style="font-weight: 700; font-size: 0.92em;">(${sign}${change.toFixed(2)} · ${sign}${changePct.toFixed(2)}%)</b>
-        Vol: <b class="legend-val" style="color: var(--text-primary); font-weight: 600;">${(c.volume || 0).toLocaleString()}</b>
+      <div class="legend-row legend-title-row">
+        <span class="legend-symbol">${instMeta.name} [${this.timeframe}]</span>
+        <span class="legend-datetime">${dtLabel}</span>
+        ${structureInfo}
+      </div>
+      <div class="legend-row legend-data-row">
+        <span class="legend-ohlc">
+          O:<b class="legend-val" style="color: #E2E8F0; font-weight: 700;">${formattedOpen}</b>
+          H:<b class="legend-val" style="color: #34D399; font-weight: 700;">${formattedHigh}</b>
+          L:<b class="legend-val" style="color: #F87171; font-weight: 700;">${formattedLow}</b>
+          C:<b class="legend-val ${chgClass}" style="font-weight: 700;">${formattedClose}</b>
+          <b class="legend-val ${chgClass}" style="font-weight: 700; font-size: 0.92em;">(${sign}${change.toFixed(2)} · ${sign}${changePct.toFixed(2)}%)</b>
+          Vol:<b class="legend-val" style="color: var(--text-primary); font-weight: 600;">${(c.volume || 0).toLocaleString()}</b>
+        </span>
         ${vwapInfo}
         ${ema9Info}
         ${ema21Info}
@@ -1501,8 +1518,7 @@ class ChartEngine {
         ${stInfo}
         ${bbInfo}
         ${rsiInfo}
-        ${structureInfo}
-      </span>
+      </div>
     `;
   }
 

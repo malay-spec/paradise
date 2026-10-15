@@ -15,11 +15,11 @@ const HTTP_PORT = process.env.STREAMER_HTTP_PORT || 8082;
 const PYTHON_BACKEND_URL = 'http://127.0.0.1:8080';
 
 // Global state
-let currentSpot = 57450.0;
-let prevClose = 57200.0;
-let dayOpen = 57350.0;
-let dayHigh = 57600.0;
-let dayLow = 57150.0;
+let currentSpot = 55634.55;
+let prevClose = 55316.0;
+let dayOpen = 55350.0;
+let dayHigh = 56065.15;
+let dayLow = 55279.0;
 let totalVolume = 1450000;
 let lastAnchorFetch = 0;
 let isLiveFeed = true;

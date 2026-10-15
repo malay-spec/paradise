@@ -12,7 +12,8 @@ class OptionChainEngine {
   }
 
   getOrCreateStrikeOI(strike, atmStrike) {
-    const currentExpiryKey = (window.appState && window.appState.selectedExpiry) ? window.appState.selectedExpiry.key : 'DEFAULT';
+    const currentExpiry = (window.appState && window.appState.selectedExpiry) ? window.appState.selectedExpiry : { key: 'DEFAULT', label: 'Monthly' };
+    const currentExpiryKey = currentExpiry.key || 'DEFAULT';
     const cacheKey = `${currentExpiryKey}_ATM_${atmStrike}_${strike}`;
 
     if (this.lastExpiryKey !== currentExpiryKey || this.lastAtmStrike !== atmStrike) {
@@ -28,18 +29,24 @@ class OptionChainEngine {
       if (!cached.lastTickTime || now - cached.lastTickTime > 3000) {
         cached.lastTickTime = now;
         // Institutional flow micro-fluctuation per strike
-        const callDeltaFlux = Math.round((Math.random() - 0.48) * 6500);
-        const putDeltaFlux = Math.round((Math.random() - 0.48) * 6500);
-        cached.callOI = Math.max(450000, cached.callOI + callDeltaFlux);
-        cached.putOI = Math.max(450000, cached.putOI + putDeltaFlux);
+        const callDeltaFlux = Math.round((Math.random() - 0.48) * 4500);
+        const putDeltaFlux = Math.round((Math.random() - 0.48) * 4500);
+        cached.callOI = Math.max(50000, cached.callOI + callDeltaFlux);
+        cached.putOI = Math.max(50000, cached.putOI + putDeltaFlux);
         cached.callChgOI += callDeltaFlux;
         cached.putChgOI += putDeltaFlux;
-        const cBase = Math.max(100000, cached.callOI - cached.callChgOI);
-        const pBase = Math.max(100000, cached.putOI - cached.putChgOI);
+        const cBase = Math.max(50000, cached.callOI - cached.callChgOI);
+        const pBase = Math.max(50000, cached.putOI - cached.putChgOI);
         cached.callOIChgPct = parseFloat(((cached.callChgOI / cBase) * 100).toFixed(2));
         cached.putOIChgPct = parseFloat(((cached.putChgOI / pBase) * 100).toFixed(2));
       }
       return cached;
+    }
+
+    // Expiry specific hash for distinct deterministic distributions per expiry
+    let expHash = 0;
+    for (let c = 0; c < currentExpiryKey.length; c++) {
+      expHash = (expHash * 31 + currentExpiryKey.charCodeAt(c)) & 0xffffff;
     }
 
     const offset = (strike - atmStrike) / 100.0;
@@ -55,19 +62,22 @@ class OptionChainEngine {
     // Institutional strike magnet multipliers (Round 1000 > Round 500 > Round 200 > Round 100)
     let roundMult = 1.05;
     if (strike % 1000 === 0) {
-      roundMult = 1.85; // 57000, 58000, 59000
+      roundMult = 1.85; // 55000, 56000, 57000
     } else if (strike % 500 === 0) {
-      roundMult = 1.55; // 56500, 57500, 58500
+      roundMult = 1.55; // 55500, 56500, 57500
     } else if (strike % 200 === 0) {
-      roundMult = 1.25; // 57200, 57400, 57600, 57800
+      roundMult = 1.25; // 55200, 55400, 55600, 55800
     }
 
-    // Deterministic pseudo-random variation per strike
-    const seedC = (Math.sin(strike * 0.0137 + 42.12) * 43758.5453) % 1.0;
-    const seedP = (Math.sin(strike * 0.0189 + 17.84) * 43758.5453) % 1.0;
+    // Deterministic pseudo-random variation per strike and expiry
+    const seedC = (Math.sin(strike * 0.0137 + expHash * 0.007 + 42.12) * 43758.5453) % 1.0;
+    const seedP = (Math.sin(strike * 0.0189 + expHash * 0.009 + 17.84) * 43758.5453) % 1.0;
 
-    const baseOI = 2400000; // 24 Lakh base
-    const baseFloor = 650000; // 6.5 Lakh realistic minimum floor even for deep wings
+    const isMonthly = currentExpiry.label ? currentExpiry.label.toLowerCase().includes('monthly') : false;
+    const expiryMult = isMonthly ? 1.0 : 0.85;
+
+    const baseOI = Math.round(2400000 * expiryMult);
+    const baseFloor = Math.round(650000 * expiryMult);
 
     const rawCall = baseFloor + (baseOI * distCall * roundMult) * (0.82 + 0.36 * Math.abs(seedC));
     const rawPut = baseFloor + (baseOI * distPut * roundMult) * (0.82 + 0.36 * Math.abs(seedP));
@@ -75,8 +85,8 @@ class OptionChainEngine {
     const callOI = Math.round(rawCall / 1000) * 1000;
     const putOI = Math.round(rawPut / 1000) * 1000;
 
-    const callChgOI = Math.round((callOI * 0.06) * (Math.sin(strike * 0.05) * 1.5));
-    const putChgOI = Math.round((putOI * 0.06) * (Math.cos(strike * 0.05) * 1.5));
+    const callChgOI = Math.round((callOI * 0.06) * (Math.sin((strike + expHash) * 0.05) * 1.5));
+    const putChgOI = Math.round((putOI * 0.06) * (Math.cos((strike + expHash) * 0.05) * 1.5));
 
     const callChg = ((Math.abs(seedC) * 18 - 6) * (offset < 0 ? 1.2 : 0.8)).toFixed(2);
     const putChg = ((Math.abs(seedP) * 18 - 8) * (offset > 0 ? 1.2 : 0.8)).toFixed(2);
@@ -127,14 +137,14 @@ class OptionChainEngine {
   }
 
   // Calculate Black-Scholes Greeks and Theoretical Price (Aligned with NSE Derivative Pricing & Zerodha)
-  calculateGreeks(spot, strike, daysToExpiry = 7.0, ivPercent = 13.5) {
+  calculateGreeks(spot, strike, daysToExpiry = 14.0, ivPercent = 14.25) {
     const T = Math.max(0.0005, daysToExpiry / 365.0);
     const m = Math.log(strike / spot);
-    const baseIv = ivPercent || 13.5;
+    const baseIv = ivPercent || (window.appState && window.appState.indiaVix) || 14.25;
     
     // Balanced skew for Call vs Put
-    const sigmaCall = Math.max(0.06, (baseIv + Math.max(-2, Math.min(5, m * 6.0))) / 100.0);
-    const sigmaPut = Math.max(0.06, (baseIv + Math.max(-2, Math.min(6, -m * 8.0))) / 100.0);
+    const sigmaCall = Math.max(0.06, (baseIv + Math.max(-1.5, Math.min(3.0, m * 4.0))) / 100.0);
+    const sigmaPut = Math.max(0.06, (baseIv + Math.max(-1.5, Math.min(3.5, -m * 5.0))) / 100.0);
     const r = 0.065;
 
     // Call calculation
@@ -189,22 +199,22 @@ class OptionChainEngine {
     let totalPutOI = 0;
     let maxPainStrike = atmStrike;
     let minLoss = Infinity;
-    const rawVix = vix || (window.appState && window.appState.indiaVix) || 11.23;
-    const baseIV = Math.max(14.5, parseFloat(rawVix) * 1.31);
-    const dte = (window.appState && window.appState.getDaysToExpiry) ? window.appState.getDaysToExpiry() : 21.0;
+    const rawVix = vix || (window.appState && window.appState.indiaVix) || 14.25;
+    const baseIV = parseFloat(rawVix) || 14.25;
+    const dte = (window.appState && window.appState.getDaysToExpiry) ? window.appState.getDaysToExpiry() : 14.15;
 
     for (let i = -this.strikesRange; i <= this.strikesRange; i++) {
       const strike = atmStrike + i * 100;
       
-      // NSE IV smile: higher OTM put skew (Matches Zerodha live options ticks)
-      const moneyness = (strike - spotPrice) / (spotPrice || 57400);
+      // Realistic NSE IV smile: gentle skew reflecting true market volatility
+      const moneyness = (strike - spotPrice) / (spotPrice || 55500);
       let strikeIV = baseIV;
       if (moneyness < 0) {
         // OTM Puts / ITM Calls
-        strikeIV = baseIV + Math.abs(moneyness) * 20.0;
+        strikeIV = baseIV + Math.min(3.5, Math.abs(moneyness) * 8.0);
       } else {
         // OTM Calls / ITM Puts
-        strikeIV = baseIV + moneyness * 15.0;
+        strikeIV = baseIV + Math.min(2.5, moneyness * 6.0);
       }
 
       const greeks = this.calculateGreeks(spotPrice, strike, dte, strikeIV);
@@ -297,10 +307,52 @@ class OptionChainEngine {
       return `${pcr} (Strong Bearish)`;
     };
 
-    if (pcrEl) pcrEl.textContent = formatSentiment(data.pcr);
-    if (callOIEl) callOIEl.textContent = (data.totalCallOI / 100000).toFixed(2) + ' L';
-    if (putOIEl) putOIEl.textContent = (data.totalPutOI / 100000).toFixed(2) + ' L';
-    if (maxPainEl) maxPainEl.textContent = data.maxPainStrike.toLocaleString('en-IN');
+    if (pcrEl) {
+      pcrEl.textContent = formatSentiment(data.pcr);
+      const p = parseFloat(data.pcr);
+      if (p >= 1.05) {
+        pcrEl.style.color = 'var(--bull-green)';
+      } else if (p >= 0.90) {
+        pcrEl.style.color = '#F59E0B'; // Neutral gold
+      } else {
+        pcrEl.style.color = 'var(--bear-red)';
+      }
+    }
+
+    const lotSize = (window.appState && window.appState.lotSize) || 30;
+
+    // Helper for formatting Total Open Interest (Handles Crores, Lakhs, Lots)
+    const formatTotalOI = (oi) => {
+      const lakhVal = (oi / 100000).toFixed(2);
+      const lotsVal = Math.round(oi / lotSize).toLocaleString('en-IN');
+      const sharesVal = oi.toLocaleString('en-IN');
+      if (oi >= 10000000) {
+        const crVal = (oi / 10000000).toFixed(2);
+        return {
+          displayHtml: `${crVal} Cr <span style="font-size: 0.72rem; opacity: 0.8; font-weight: 500;">(${lakhVal} L)</span>`,
+          title: `Total Open Interest: ${sharesVal} shares (${lakhVal} Lakhs / ${crVal} Cr | ${lotsVal} Lots)`
+        };
+      }
+      return {
+        displayHtml: `${lakhVal} L`,
+        title: `Total Open Interest: ${sharesVal} shares (${lakhVal} Lakhs | ${lotsVal} Lots)`
+      };
+    };
+
+    if (callOIEl) {
+      const fmtCall = formatTotalOI(data.totalCallOI);
+      callOIEl.innerHTML = fmtCall.displayHtml;
+      callOIEl.title = `Call Writers Resistance: ${fmtCall.title}`;
+    }
+    if (putOIEl) {
+      const fmtPut = formatTotalOI(data.totalPutOI);
+      putOIEl.innerHTML = fmtPut.displayHtml;
+      putOIEl.title = `Put Writers Support: ${fmtPut.title}`;
+    }
+    if (maxPainEl) {
+      maxPainEl.textContent = data.maxPainStrike.toLocaleString('en-IN');
+      maxPainEl.title = `Max Pain Strike: ₹${data.maxPainStrike.toLocaleString('en-IN')} (Lowest aggregate payout for option writers)`;
+    }
 
     if (pcrNeedle) {
       // PCR range roughly 0.5 to 1.5 -> clamp 0% to 100%
@@ -310,6 +362,7 @@ class OptionChainEngine {
     }
 
     const formatOI = (oi) => {
+      if (oi >= 10000000) return `${(oi / 10000000).toFixed(2)} Cr`;
       if (oi >= 100000) return `${(oi / 100000).toFixed(2)} L`;
       return `${(oi / 1000).toFixed(1)} k`;
     };
@@ -331,13 +384,16 @@ class OptionChainEngine {
       const callChgColor = s.call.chgOIPct >= 0 ? 'var(--bull-green)' : 'var(--bear-red)';
       const putChgColor = s.put.chgOIPct >= 0 ? 'var(--bull-green)' : 'var(--bear-red)';
 
+      const callLtpChg = parseFloat(s.call.chg);
+      const putLtpChg = parseFloat(s.put.chg);
+
       rowsHtml += `
         <tr class="${isAtmClass}">
           <!-- CALL GREEKS & DATA -->
-          <td class="${callItmClass} col-call col-greek">${s.call.delta}</td>
-          <td class="${callItmClass} col-call col-greek">${s.call.theta}</td>
-          <td class="${callItmClass} col-call col-greek">${s.call.vega}</td>
-          <td class="${callItmClass} col-call col-iv">${s.iv}%</td>
+          <td class="${callItmClass} col-call col-greek col-delta" style="font-weight: 700; color: #10B981;">${s.call.delta}</td>
+          <td class="${callItmClass} col-call col-greek col-theta" style="color: #FB923C;">${s.call.theta}</td>
+          <td class="${callItmClass} col-call col-greek col-vega" style="color: #94A3B8;">${s.call.vega}</td>
+          <td class="${callItmClass} col-call col-iv" style="color: #C084FC;">${s.iv}%</td>
           <td class="${callItmClass} oi-bar-cell col-call col-oi" title="Call OI: ${s.call.oi.toLocaleString('en-IN')} shares (${callLots} Lots) | Chg: ${(s.call.chgOI >= 0 ? '+' : '') + s.call.chgOI.toLocaleString('en-IN')}">
             <div class="oi-bar-fill-call" style="width: ${callBarWidth}%;"></div>
             <span class="oi-num">${formatOI(s.call.oi)}</span>
@@ -348,8 +404,8 @@ class OptionChainEngine {
               ${callChgSign}${s.call.chgOIPct.toFixed(1)}%
             </span>
           </td>
-          <td class="${callItmClass} col-call col-ltp" style="color: ${s.call.chg >= 0 ? 'var(--bull-green)' : 'var(--bear-red)'}; font-weight: 700; cursor: pointer; text-decoration: underline dotted;" title="Click to view & chart ${s.strike} CE on terminal" onclick="window.app.selectAndChartStrike(${s.strike}, 'CE', ${s.call.ltp})">
-            ₹${s.call.ltp} 📈
+          <td class="${callItmClass} col-call col-ltp" style="color: ${callLtpChg >= 0 ? 'var(--bull-green)' : 'var(--bear-red)'}; font-weight: 700; cursor: pointer; text-decoration: underline dotted;" title="Click to view & chart ${s.strike} CE on terminal" onclick="window.app.selectAndChartStrike(${s.strike}, 'CE', ${s.call.ltp})">
+            ₹${s.call.ltp} ${callLtpChg >= 0 ? '📈' : '📉'}
           </td>
 
           <!-- STRIKE -->
@@ -359,8 +415,8 @@ class OptionChainEngine {
           </td>
 
           <!-- PUT GREEKS & DATA -->
-          <td class="${putItmClass} col-put col-ltp" style="color: ${s.put.chg >= 0 ? 'var(--bull-green)' : 'var(--bear-red)'}; font-weight: 700; cursor: pointer; text-decoration: underline dotted;" title="Click to view & chart ${s.strike} PE on terminal" onclick="window.app.selectAndChartStrike(${s.strike}, 'PE', ${s.put.ltp})">
-            📈 ₹${s.put.ltp}
+          <td class="${putItmClass} col-put col-ltp" style="color: ${putLtpChg >= 0 ? 'var(--bull-green)' : 'var(--bear-red)'}; font-weight: 700; cursor: pointer; text-decoration: underline dotted;" title="Click to view & chart ${s.strike} PE on terminal" onclick="window.app.selectAndChartStrike(${s.strike}, 'PE', ${s.put.ltp})">
+            ${putLtpChg >= 0 ? '📈' : '📉'} ₹${s.put.ltp}
           </td>
           <!-- PUT OI CHG % -->
           <td class="${putItmClass} col-put col-oichg" style="text-align: center; font-family: var(--font-mono); font-size: 0.72rem; font-weight: 700; white-space: nowrap;" title="Put OI Change: ${(s.put.chgOI >= 0 ? '+' : '') + s.put.chgOI.toLocaleString('en-IN')} (${putChgSign}${s.put.chgOIPct}%)">
@@ -372,15 +428,18 @@ class OptionChainEngine {
             <div class="oi-bar-fill-put" style="width: ${putBarWidth}%;"></div>
             <span class="oi-num">${formatOI(s.put.oi)}</span>
           </td>
-          <td class="${putItmClass} col-put col-iv">${s.iv}%</td>
-          <td class="${putItmClass} col-put col-greek">${s.put.vega}</td>
-          <td class="${putItmClass} col-put col-greek">${s.put.theta}</td>
-          <td class="${putItmClass} col-put col-greek">${s.put.delta}</td>
+          <td class="${putItmClass} col-put col-iv" style="color: #C084FC;">${s.iv}%</td>
+          <td class="${putItmClass} col-put col-greek col-vega" style="color: #94A3B8;">${s.put.vega}</td>
+          <td class="${putItmClass} col-put col-greek col-theta" style="color: #FB923C;">${s.put.theta}</td>
+          <td class="${putItmClass} col-put col-greek col-delta" style="font-weight: 700; color: #F43F5E;">${s.put.delta}</td>
         </tr>
       `;
     });
 
     container.innerHTML = rowsHtml;
+    if (window.app && typeof window.app.syncOptionChainColspans === 'function') {
+      window.app.syncOptionChainColspans();
+    }
   }
 }
 

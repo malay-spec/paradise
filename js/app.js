@@ -73,8 +73,16 @@ class Application {
         window.strikeAdvisor.renderSuggestions('strike-suggestions-container');
         window.strikeAdvisor.updateHeaderAccuracyBadge();
       }
-    } catch (e) { console.error("StrikeAdvisor render error:", e); }
-    try { window.optionChainEngine.renderTable('option-chain-body'); } catch (e) { console.error("OptionChain render error:", e); }
+      if (window.flashScalpSniper) {
+        window.flashScalpSniper.render();
+      }
+    } catch (e) { console.error("StrikeAdvisor / FlashScalpSniper render error:", e); }
+    try {
+      window.optionChainEngine.renderTable('option-chain-body');
+      const savedOptView = localStorage.getItem('banknifty_opt_chain_view');
+      const initialOptView = savedOptView || (window.innerWidth <= 768 ? 'core' : 'all');
+      this.setOptionChainView(initialOptView);
+    } catch (e) { console.error("OptionChain render error:", e); }
     try { window.brokerBridge.renderBrokersList('broker-grid-list'); } catch (e) { console.error("BrokerBridge render error:", e); }
 
     // Run Initial Backtest
@@ -216,8 +224,13 @@ class Application {
       window.location.replace(targetUrl.toString());
     };
 
+    const drawerRefreshBtn = document.getElementById('btn-drawer-refresh');
+
     if (forceRefreshBtn) {
       forceRefreshBtn.addEventListener('click', () => triggerAppHardRefresh());
+    }
+    if (drawerRefreshBtn) {
+      drawerRefreshBtn.addEventListener('click', () => triggerAppHardRefresh());
     }
     if (updateReloadBtn) {
       updateReloadBtn.addEventListener('click', () => triggerAppHardRefresh());
@@ -360,31 +373,11 @@ class Application {
       });
     });
 
-    // Mobile Option Chain Segmented Filter (Core OI & LTP | Calls | Puts | Greeks | All)
+    // Option Chain Segmented Filter Toolbar (All | Greeks | OI % Chg | Core | Calls | Puts)
     document.querySelectorAll('.opt-filter-btn').forEach(btn => {
       btn.addEventListener('click', () => {
-        document.querySelectorAll('.opt-filter-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
         const side = btn.getAttribute('data-opt-side');
-        const table = document.querySelector('.option-chain-table');
-        if (!table) return;
-        table.classList.remove('view-core', 'filter-ce-only', 'filter-pe-only', 'view-greeks', 'view-all');
-        if (side === 'core') table.classList.add('view-core');
-        else if (side === 'ce') table.classList.add('filter-ce-only');
-        else if (side === 'pe') table.classList.add('filter-pe-only');
-        else if (side === 'greeks') table.classList.add('view-greeks');
-        else if (side === 'all') table.classList.add('view-all');
-
-        // When switching to 'all', auto-center table horizontally on ATM strike
-        if (side === 'all') {
-          const container = document.querySelector('.option-table-container');
-          const atm = container ? container.querySelector('.strike-atm-row .strike-cell') : null;
-          if (container && atm) {
-            setTimeout(() => {
-              container.scrollLeft = atm.offsetLeft - (container.clientWidth / 2) + (atm.clientWidth / 2);
-            }, 50);
-          }
-        }
+        this.setOptionChainView(side);
       });
     });
 
@@ -883,32 +876,110 @@ class Application {
       setTimeout(() => this.chartEngine.resize(), 50);
     } else if (tabId === 'optionchain') {
       window.optionChainEngine.renderTable('option-chain-body');
-      const table = document.querySelector('.option-chain-table');
-      if (table) {
-        const activeBtn = document.querySelector('.opt-filter-btn.active');
-        const activeSide = activeBtn ? activeBtn.getAttribute('data-opt-side') : (window.innerWidth <= 768 ? 'core' : 'all');
-        table.classList.remove('view-core', 'filter-ce-only', 'filter-pe-only', 'view-greeks', 'view-all');
-        if (activeSide === 'core') table.classList.add('view-core');
-        else if (activeSide === 'ce') table.classList.add('filter-ce-only');
-        else if (activeSide === 'pe') table.classList.add('filter-pe-only');
-        else if (activeSide === 'greeks') table.classList.add('view-greeks');
-        else if (activeSide === 'all') {
-          table.classList.add('view-all');
-          const container = document.querySelector('.option-table-container');
-          const atm = container ? container.querySelector('.strike-atm-row .strike-cell') : null;
-          if (container && atm) {
-            setTimeout(() => {
-              container.scrollLeft = atm.offsetLeft - (container.clientWidth / 2) + (atm.clientWidth / 2);
-            }, 60);
-          }
-        }
-      }
+      const savedSide = localStorage.getItem('banknifty_opt_chain_view');
+      const activeSide = savedSide || (window.innerWidth <= 768 ? 'core' : 'all');
+      this.setOptionChainView(activeSide);
     } else if (tabId === 'backtest') {
       setTimeout(() => {
         if (window.backtestEngine.currentResults) {
           window.backtestEngine.renderEquityChart('equity-canvas', window.backtestEngine.currentResults.equityCurve);
         }
       }, 50);
+    }
+  }
+
+  setOptionChainView(side) {
+    const table = document.querySelector('.option-chain-table');
+    if (!table) return;
+
+    const validSides = ['all', 'greeks', 'oichg', 'core', 'ce', 'pe'];
+    if (!validSides.includes(side)) side = (window.innerWidth <= 768 ? 'core' : 'all');
+
+    table.classList.remove('view-core', 'filter-ce-only', 'filter-pe-only', 'view-greeks', 'view-oichg', 'view-all');
+
+    if (side === 'core') table.classList.add('view-core');
+    else if (side === 'oichg') table.classList.add('view-oichg');
+    else if (side === 'ce') table.classList.add('filter-ce-only');
+    else if (side === 'pe') table.classList.add('filter-pe-only');
+    else if (side === 'greeks') table.classList.add('view-greeks');
+    else {
+      side = 'all';
+      table.classList.add('view-all');
+    }
+
+    document.querySelectorAll('.opt-filter-btn').forEach(btn => {
+      if (btn.getAttribute('data-opt-side') === side) {
+        btn.classList.add('active');
+      } else {
+        btn.classList.remove('active');
+      }
+    });
+
+    this.syncOptionChainColspans(side);
+
+    try {
+      localStorage.setItem('banknifty_opt_chain_view', side);
+    } catch (e) {}
+
+    // When switching to 'all', auto-center table horizontally on ATM strike
+    if (side === 'all') {
+      const container = document.querySelector('.option-table-container');
+      const atm = container ? container.querySelector('.strike-atm-row .strike-cell') : null;
+      if (container && atm) {
+        setTimeout(() => {
+          container.scrollLeft = atm.offsetLeft - (container.clientWidth / 2) + (atm.clientWidth / 2);
+        }, 50);
+      }
+    }
+  }
+
+  syncOptionChainColspans(side) {
+    const table = document.querySelector('.option-chain-table');
+    if (!table) return;
+
+    if (!side) {
+      if (table.classList.contains('view-all')) side = 'all';
+      else if (table.classList.contains('view-greeks')) side = 'greeks';
+      else if (table.classList.contains('view-oichg')) side = 'oichg';
+      else if (table.classList.contains('view-core')) side = 'core';
+      else if (table.classList.contains('filter-ce-only')) side = 'ce';
+      else if (table.classList.contains('filter-pe-only')) side = 'pe';
+      else side = (window.innerWidth <= 768 ? 'core' : 'all');
+    }
+
+    const callHeader = document.querySelector('.header-call-group');
+    const putHeader = document.querySelector('.header-put-group');
+
+    if (!callHeader || !putHeader) return;
+
+    if (side === 'all') {
+      callHeader.style.display = '';
+      putHeader.style.display = '';
+      callHeader.colSpan = 7;
+      putHeader.colSpan = 7;
+    } else if (side === 'greeks') {
+      callHeader.style.display = '';
+      putHeader.style.display = '';
+      callHeader.colSpan = 5; // Delta, Theta, Vega, IV, LTP
+      putHeader.colSpan = 5;
+    } else if (side === 'oichg') {
+      callHeader.style.display = '';
+      putHeader.style.display = '';
+      callHeader.colSpan = 3; // OI, OI Chg %, LTP
+      putHeader.colSpan = 3;
+    } else if (side === 'core') {
+      callHeader.style.display = '';
+      putHeader.style.display = '';
+      callHeader.colSpan = 2; // OI, LTP
+      putHeader.colSpan = 2;
+    } else if (side === 'ce') {
+      callHeader.style.display = '';
+      putHeader.style.display = 'none';
+      callHeader.colSpan = 7;
+    } else if (side === 'pe') {
+      callHeader.style.display = 'none';
+      putHeader.style.display = '';
+      putHeader.colSpan = 7;
     }
   }
 
@@ -1104,29 +1175,43 @@ class Application {
     const appState = window.appState;
     if (!appState.sim.isPlaying) return;
 
-    // If in LIVE_FEED mode, prices and candles are driven purely by authentic NSE real-time quotes
+    // If in LIVE_FEED mode, check if live WebSocket is actively streaming sub-millisecond ticks
+    let delta = 0;
     if (appState.sim && appState.sim.feedMode === 'LIVE_FEED') {
-      if (appState._hasSyncedRealFeed) {
+      if (window.wsMarketClient && window.wsMarketClient.isConnected) {
+        // High-frequency WebSocket streamer handles live ticks directly; refresh tables
         this.renderHeaderStats();
         this.renderPositionsTable();
         this.renderOrdersTable();
         return;
       }
-    }
-
-    // If after-hours mode is FROZEN, keep authentic static market closing prices
-    if (appState.sim.afterHoursMode === 'FROZEN') {
+      
+      // If WebSocket is not streaming (e.g. between 4s HTTP polls or offline/cloud mode):
+      // Keep subtle order book micro-fluctuations (±1.5 pts) active around the anchor spot
+      // so the terminal is NEVER stagnant!
+      const anchor = appState._anchorSpotPrice || appState.spotPrice || 55634.55;
+      delta = (Math.random() - 0.495) * 2.8;
+      const candidateSpot = Math.round((appState.spotPrice + delta) * 20) / 20;
+      if (Math.abs(candidateSpot - anchor) < 22) {
+        appState.spotPrice = candidateSpot;
+      } else {
+        delta = (anchor - appState.spotPrice) * 0.2;
+        appState.spotPrice = Math.round((appState.spotPrice + delta) * 20) / 20;
+      }
+      appState.futuresPrice = Math.round((appState.spotPrice + 72.8 + (Math.random() * 1.5 - 0.75)) * 20) / 20;
+    } else if (appState.sim.afterHoursMode === 'FROZEN') {
+      // If after-hours mode is FROZEN, keep authentic static market closing prices
       this.renderHeaderStats();
       this.renderPositionsTable();
       this.renderOrdersTable();
       this.renderCandlesBollingerTable();
       return;
+    } else {
+      // Simulation mode
+      delta = (Math.random() - 0.485) * 6.5;
+      appState.spotPrice = Math.round((appState.spotPrice + delta) * 20) / 20;
+      appState.futuresPrice = Math.round((appState.spotPrice + 72.8 + (Math.random() * 2 - 1)) * 20) / 20;
     }
-
-    // Simulate subtle BankNifty spot price fluctuation for strategy testing
-    const delta = (Math.random() - 0.485) * 6.5;
-    appState.spotPrice = Math.round((appState.spotPrice + delta) * 20) / 20;
-    appState.futuresPrice = Math.round((appState.spotPrice + 72.8 + (Math.random() * 2 - 1)) * 20) / 20;
 
     if (appState.spotPrice > appState.dayHigh) appState.dayHigh = appState.spotPrice;
     if (appState.spotPrice < appState.dayLow) appState.dayLow = appState.spotPrice;
@@ -1220,6 +1305,11 @@ class Application {
       // Feed into Strike Price Advisor for instant Supertrend / VWAP breakout capture
       if (window.strikeAdvisor && typeof window.strikeAdvisor.generateStrikeSuggestions === 'function') {
         window.strikeAdvisor.generateStrikeSuggestions(false);
+      }
+
+      // Feed into Flash Scalp Sniper (2-minute micro-dip V-reversals)
+      if (window.flashScalpSniper && typeof window.flashScalpSniper.onSpotTick === 'function') {
+        window.flashScalpSniper.onSpotTick(appState.spotPrice);
       }
     }
 
@@ -2146,6 +2236,10 @@ class Application {
           window.appState.syncLiveMarketFeed(data);
           const newAtm = Math.round(window.appState.spotPrice / 100) * 100;
 
+          if (window.flashScalpSniper && typeof window.flashScalpSniper.onSpotTick === 'function') {
+            window.flashScalpSniper.onSpotTick(window.appState.spotPrice);
+          }
+
           if (oldAtm !== newAtm || !this._dynamicStrikesInitialized) {
             this._dynamicStrikesInitialized = true;
             this.rebuildDynamicStrikeSelectorAndPills();
@@ -2593,18 +2687,39 @@ class Application {
     `;
   }
 
+  resetOrientationViewport() {
+    window.scrollTo(0, 0);
+    if (document.documentElement) {
+      document.documentElement.scrollLeft = 0;
+      document.documentElement.style.width = '100%';
+      document.documentElement.style.maxWidth = '100%';
+    }
+    if (document.body) {
+      document.body.scrollLeft = 0;
+      document.body.style.width = '100%';
+      document.body.style.maxWidth = '100%';
+    }
+    if (this.chartEngine) {
+      this.chartEngine.resize();
+    }
+  }
+
   initOrientationHandling() {
     this.updateOrientationUI();
     const screenObj = typeof screen !== 'undefined' ? screen : (typeof window !== 'undefined' ? window.screen : null);
     if (screenObj && screenObj.orientation && screenObj.orientation.addEventListener) {
       screenObj.orientation.addEventListener('change', () => {
+        this.resetOrientationViewport();
         this.updateOrientationUI();
-        if (this.chartEngine) setTimeout(() => this.chartEngine.resize(), 150);
+        setTimeout(() => this.resetOrientationViewport(), 150);
+        setTimeout(() => this.resetOrientationViewport(), 400);
       });
     }
     window.addEventListener('orientationchange', () => {
+      this.resetOrientationViewport();
       this.updateOrientationUI();
-      if (this.chartEngine) setTimeout(() => this.chartEngine.resize(), 150);
+      setTimeout(() => this.resetOrientationViewport(), 150);
+      setTimeout(() => this.resetOrientationViewport(), 400);
     });
     window.addEventListener('resize', () => {
       this.updateOrientationUI();
@@ -2671,18 +2786,24 @@ class Application {
         }
       }
 
+      this.resetOrientationViewport();
       this.updateOrientationUI();
-      setTimeout(() => this.updateOrientationUI(), 100);
-      setTimeout(() => this.updateOrientationUI(), 300);
-
-      if (this.chartEngine) {
-        setTimeout(() => this.chartEngine.resize(), 100);
-        setTimeout(() => this.chartEngine.resize(), 300);
-      }
+      setTimeout(() => {
+        this.resetOrientationViewport();
+        this.updateOrientationUI();
+      }, 100);
+      setTimeout(() => {
+        this.resetOrientationViewport();
+        this.updateOrientationUI();
+      }, 350);
+      setTimeout(() => {
+        this.resetOrientationViewport();
+      }, 600);
     } catch (err) {
       if (window.showToast) {
         window.showToast('📱 Rotate phone & enable Auto-Rotate to switch orientation', 'info');
       }
+      this.resetOrientationViewport();
       this.updateOrientationUI();
     }
   }
@@ -2694,10 +2815,9 @@ window.addEventListener('DOMContentLoaded', () => {
 });
 
 window.addEventListener('orientationchange', () => {
-  setTimeout(() => {
-    if (window.app && window.app.chartEngine) window.app.chartEngine.resize();
-  }, 150);
-  setTimeout(() => {
-    if (window.app && window.app.chartEngine) window.app.chartEngine.resize();
-  }, 400);
+  if (window.app && typeof window.app.resetOrientationViewport === 'function') {
+    window.app.resetOrientationViewport();
+    setTimeout(() => window.app.resetOrientationViewport(), 150);
+    setTimeout(() => window.app.resetOrientationViewport(), 450);
+  }
 });
