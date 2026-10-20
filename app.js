@@ -114,9 +114,6 @@ class Application {
     // Initialize Mobile Orientation Change Handler
     try { this.initOrientationHandling(); } catch (e) { console.error("Orientation init error:", e); }
 
-    // Initialize Mobile Live Server Detection
-    try { this.initMobileLiveServerDetection(); } catch (e) { console.error("Mobile server detection error:", e); }
-
     if (window.showToast) {
       window.showToast('🟢 LIVE NSE Market Feed Connected: BANKNIFTY Real-Time', 'success');
     }
@@ -260,6 +257,23 @@ class Application {
     if (marketStatusPill) {
       marketStatusPill.addEventListener('click', () => {
         this.openHolidayModal();
+      });
+    }
+
+    // Explicit Mobile Landscape / Portrait Toggle Button Listeners
+    const btnToggleLandscape = document.getElementById('btn-toggle-landscape');
+    if (btnToggleLandscape) {
+      btnToggleLandscape.addEventListener('click', (e) => {
+        e.preventDefault();
+        this.toggleMobileLandscape();
+      });
+    }
+
+    const btnChartFullscreen = document.getElementById('btn-chart-fullscreen');
+    if (btnChartFullscreen) {
+      btnChartFullscreen.addEventListener('click', (e) => {
+        e.preventDefault();
+        this.toggleMobileLandscape();
       });
     }
 
@@ -2218,6 +2232,8 @@ class Application {
       '/api/market/live',
       ...(customHost ? [`http://${customHost}/api/market/live`] : []),
       'http://localhost:8080/api/market/live',
+      `./market_snapshot.json?t=${Date.now()}`,
+      `market_snapshot.json?t=${Date.now()}`,
       `./data/market_snapshot.json?t=${Date.now()}`,
       `data/market_snapshot.json?t=${Date.now()}`
     ];
@@ -2625,64 +2641,6 @@ class Application {
     if (modal) modal.style.display = 'none';
   }
 
-  // Mobile Live Wi-Fi Modal & Detection
-  initMobileLiveServerDetection() {
-    const currentHost = (typeof window !== 'undefined' && window.location && window.location.hostname) ? window.location.hostname : '';
-    const isLocal = currentHost === 'localhost' || currentHost === '127.0.0.1' || currentHost.startsWith('192.168.') || currentHost.startsWith('10.');
-
-    if (isLocal) {
-      fetch('/api/mobile-info')
-        .then(r => r.json())
-        .then(data => {
-          if (data && data.mobile_url) {
-            window.algoedgeMobileUrl = data.mobile_url;
-            const input = document.getElementById('mobile-live-url-input');
-            const qr = document.getElementById('mobile-live-qr-code');
-            if (input) input.value = data.mobile_url;
-            if (qr) qr.src = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(data.mobile_url)}`;
-          }
-        })
-        .catch(() => {});
-    }
-  }
-
-  openMobileLiveModal() {
-    const modal = document.getElementById('modal-mobile-live');
-    if (modal) {
-      modal.style.display = 'flex';
-      const input = document.getElementById('mobile-live-url-input');
-      const qr = document.getElementById('mobile-live-qr-code');
-      const url = window.algoedgeMobileUrl || (window.location.hostname.includes('192.168.') ? window.location.origin : 'http://192.168.29.223:8080');
-      if (input) input.value = url;
-      if (qr) qr.src = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(url)}`;
-    }
-  }
-
-  closeMobileLiveModal() {
-    const modal = document.getElementById('modal-mobile-live');
-    if (modal) modal.style.display = 'none';
-  }
-
-  copyMobileLiveUrl() {
-    const input = document.getElementById('mobile-live-url-input');
-    if (input) {
-      const url = input.value;
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(url).then(() => {
-          if (window.showToast) window.showToast('📋 Mobile Live Wi-Fi URL copied to clipboard!', 'success');
-        }).catch(() => {
-          input.select();
-          document.execCommand('copy');
-          if (window.showToast) window.showToast('📋 Mobile Live Wi-Fi URL copied!', 'success');
-        });
-      } else {
-        input.select();
-        document.execCommand('copy');
-        if (window.showToast) window.showToast('📋 Mobile Live Wi-Fi URL copied!', 'success');
-      }
-    }
-  }
-
   renderHolidayList(year) {
     const container = document.getElementById('holiday-list-container');
     if (!container) return;
@@ -2825,27 +2783,55 @@ class Application {
       const screenObj = typeof screen !== 'undefined' ? screen : (typeof window !== 'undefined' ? window.screen : null);
 
       if (!isLandscape) {
-        if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
-          await document.documentElement.requestFullscreen().catch(() => {});
-        }
+        // --- SWITCH TO LANDSCAPE ---
+        let locked = false;
         if (screenObj && screenObj.orientation && screenObj.orientation.lock) {
-          await screenObj.orientation.lock('landscape').catch(() => {});
+          try {
+            await screenObj.orientation.lock('landscape');
+            locked = true;
+          } catch (e1) {
+            try {
+              await screenObj.orientation.lock('landscape-primary');
+              locked = true;
+            } catch (e2) {}
+          }
+        }
+        if (!locked && !document.fullscreenElement && document.documentElement.requestFullscreen) {
+          await document.documentElement.requestFullscreen().catch(() => {});
+          if (screenObj && screenObj.orientation && screenObj.orientation.lock) {
+            await screenObj.orientation.lock('landscape').catch(() => {});
+          }
         }
         if (window.showToast) {
           window.showToast('🔄 Switched to Landscape Widescreen Mode', 'success');
         }
       } else {
+        // --- SWITCH TO PORTRAIT ---
+        let locked = false;
         if (screenObj && screenObj.orientation && screenObj.orientation.lock) {
-          await screenObj.orientation.lock('portrait').catch(() => {});
+          try {
+            await screenObj.orientation.lock('portrait-primary');
+            locked = true;
+          } catch (e1) {
+            try {
+              await screenObj.orientation.lock('portrait');
+              locked = true;
+            } catch (e2) {}
+          }
         }
-        if (screenObj && screenObj.orientation && screenObj.orientation.unlock) {
-          screenObj.orientation.unlock();
+
+        // If orientation lock was not accepted by browser, unlock orientation so the phone's physical gyroscope can switch to portrait
+        if (!locked && screenObj && screenObj.orientation && screenObj.orientation.unlock) {
+          try { screenObj.orientation.unlock(); } catch (e) {}
         }
-        if (document.fullscreenElement && document.exitFullscreen) {
+
+        // If in fullscreen and not standalone, exit fullscreen smoothly
+        if (!locked && document.fullscreenElement && document.exitFullscreen) {
           await document.exitFullscreen().catch(() => {});
         }
+
         if (window.showToast) {
-          window.showToast('📱 Switched back to Portrait View', 'info');
+          window.showToast(locked ? '📱 Switched to Portrait View' : '📱 Switched to Portrait (Rotate phone upright if Auto-Rotate locked)', 'info');
         }
       }
 
@@ -2863,8 +2849,9 @@ class Application {
         this.resetOrientationViewport();
       }, 600);
     } catch (err) {
+      console.warn('Orientation toggle error:', err);
       if (window.showToast) {
-        window.showToast('📱 Rotate phone & enable Auto-Rotate to switch orientation', 'info');
+        window.showToast('📱 Rotate phone upright & check Auto-Rotate to switch orientation', 'info');
       }
       this.resetOrientationViewport();
       this.updateOrientationUI();

@@ -74,8 +74,8 @@
         <div class="market-stat-item" id="hdr-spot-stat-item">
           <span class="stat-label">BANKNIFTY SPOT</span>
           <div class="stat-value">
-            <span id="hdr-spot-price">55,634.55</span>
-            <span id="hdr-spot-chg" class="stat-change bull">+318.55 (+0.58%)</span>
+            <span id="hdr-spot-price">55,488.10</span>
+            <span id="hdr-spot-chg" class="stat-change bear">-355.90 (-0.64%)</span>
           </div>
         </div>
 
@@ -88,7 +88,7 @@
         <div class="market-stat-item" id="hdr-fut-stat-item">
           <span class="stat-label">FUTURES (CURRENT)</span>
           <div class="stat-value">
-            <span id="hdr-fut-price">55,710.00</span>
+            <span id="hdr-fut-price">55,573.60</span>
           </div>
         </div>
 
@@ -118,12 +118,6 @@
         <button id="btn-force-refresh" class="btn btn-secondary btn-sm btn-force-refresh-header" onclick="window.triggerAppHardRefresh()" title="Hard Refresh App &amp; Load Latest Updates (Clears Stale Cache) — Shortcut: Cmd+R / Ctrl+R" style="display: inline-flex !important; align-items: center; gap: 5px; padding: 4px 10px; font-size: 0.72rem; font-weight: 700; border: 1px solid var(--cyan-primary); color: var(--cyan-primary); background: rgba(0, 240, 255, 0.1); border-radius: 4px; cursor: pointer;">
           <span style="font-size: 13px;">🔄</span>
           <span class="refresh-btn-text">Refresh</span>
-        </button>
-
-        <!-- Mobile Live Wi-Fi Stream Connect Button -->
-        <button id="btn-mobile-live-connect" class="btn btn-sm" onclick="window.app && window.app.openMobileLiveModal && window.app.openMobileLiveModal()" title="Connect Mobile Phone to Live Wi-Fi Streamer (Sub-second ticks)" style="display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; font-size: 0.72rem; font-weight: 700; border: 1px solid #10B981; color: #10B981; background: rgba(16, 185, 129, 0.12); border-radius: 4px; cursor: pointer;">
-          <span style="font-size: 13px;">📱</span>
-          <span class="mobile-live-btn-text">Mobile Live</span>
         </button>
 
         <!-- Live Market Feed vs Algo Simulator Toggle -->
@@ -1507,73 +1501,26 @@ class BankNiftyCustomScalper(Strategy):
         </div>
       </div>
     </div>
-
-    <!-- 5. Mobile Live Terminal (Wi-Fi Real-Time Stream) Modal -->
-    <div id="modal-mobile-live" class="modal-overlay" style="display: none;" onclick="if(event.target === this) window.app.closeMobileLiveModal()">
-      <div class="modal-card" style="max-width: 580px; width: 92%; background: #0B111E; border: 1.5px solid #00F0FF; border-radius: 12px; box-shadow: 0 16px 50px rgba(0, 240, 255, 0.25);">
-        <div class="modal-header" style="border-bottom: 1px solid rgba(0, 240, 255, 0.2); padding-bottom: 12px;">
-          <div style="display: flex; align-items: center; gap: 10px;">
-            <span style="font-size: 1.5rem;">📱</span>
-            <div>
-              <h3 style="margin: 0; font-size: 1.15rem; color: #00F0FF;">Mobile Live Terminal (Wi-Fi Direct Stream)</h3>
-              <span style="font-size: 0.72rem; color: #94A3B8; font-family: var(--font-mono);">Sub-10ms Real-Time WebSocket Streaming on Mobile</span>
-            </div>
-          </div>
-          <button type="button" class="drawer-close-btn" onclick="window.app.closeMobileLiveModal()">✕</button>
-        </div>
-        <div class="modal-body" style="padding: 18px 20px; font-family: var(--font-sans);">
-          <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.35); border-radius: 8px; padding: 12px 14px; margin-bottom: 16px;">
-            <div style="color: #34D399; font-weight: 800; font-size: 0.85rem; margin-bottom: 4px;">⚡ How to make Mobile 100% LIVE like Laptop:</div>
-            <div style="font-size: 0.78rem; color: #E2E8F0; line-height: 1.45;">
-              Your laptop is running the <strong>BankNifty Real-Time Streaming Server</strong> on your local Wi-Fi network. Open this local URL on your mobile phone's browser (Chrome or Safari) while connected to the same Wi-Fi:
-            </div>
-          </div>
-
-          <div style="display: flex; flex-direction: column; align-items: center; gap: 12px; margin-bottom: 16px;">
-            <div style="display: flex; width: 100%; gap: 8px;">
-              <input type="text" id="mobile-live-url-input" readonly style="flex: 1; background: #030712; border: 1.5px solid #00F0FF; color: #00F0FF; padding: 10px 14px; border-radius: 6px; font-family: var(--font-mono); font-size: 0.95rem; font-weight: 700; text-align: center;" value="http://192.168.29.223:8080">
-              <button class="btn btn-primary" onclick="window.app.copyMobileLiveUrl()" style="background: linear-gradient(135deg, #00F0FF 0%, #0284C7 100%); color: #000; font-weight: 800; padding: 0 16px; border: none; border-radius: 6px; cursor: pointer;">📋 Copy</button>
-            </div>
-
-            <!-- QR Code for 1-Tap Camera Scan -->
-            <div style="text-align: center; margin-top: 6px; background: rgba(255,255,255,0.04); padding: 12px 16px; border-radius: 8px; border: 1px solid var(--border-subtle); width: 100%; box-sizing: border-box;">
-              <div style="font-size: 0.75rem; color: #94A3B8; margin-bottom: 8px; font-weight: 600;">📷 Point your phone camera at this QR code to open instantly:</div>
-              <img id="mobile-live-qr-code" src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=http%3A%2F%2F192.168.29.223%3A8080" alt="Mobile Live Terminal QR Code" style="width: 160px; height: 160px; border-radius: 8px; border: 2px solid #00F0FF; background: #FFF; padding: 4px;">
-            </div>
-          </div>
-
-          <div style="font-size: 0.78rem; color: #94A3B8; line-height: 1.45; background: rgba(0,0,0,0.3); padding: 12px; border-radius: 6px; border: 1px solid var(--border-subtle);">
-            <div style="color: #F59E0B; font-weight: 700; margin-bottom: 4px;">📲 Add as Native Mobile App (PWA):</div>
-            <div>• <strong>iPhone (Safari):</strong> Tap the <em>Share icon [⎋]</em> → tap <em>"Add to Home Screen"</em>.</div>
-            <div>• <strong>Android (Chrome):</strong> Tap the <em>3 dots [⋮]</em> → tap <em>"Install app"</em> or <em>"Add to Home screen"</em>.</div>
-            <div style="margin-top: 6px; font-size: 0.72rem; color: #64748B;">Once added, launching from your home screen gives full live WebSocket ticks with zero browser bars!</div>
-          </div>
-        </div>
-        <div class="modal-footer" style="display: flex; justify-content: flex-end; padding: 12px 20px;">
-          <button type="button" class="btn btn-secondary btn-sm" onclick="window.app.closeMobileLiveModal()">Close</button>
-        </div>
-      </div>
-    </div>
   </div>
 
-  <!-- External JS Scripts (Versioned to bust browser and Service Worker caches) -->
-  <script src="js/audioEffects.js?v=3.2.4"></script>
-  <script src="js/state.js?v=3.2.4"></script>
-  <script src="js/candleStructure.js?v=3.2.4"></script>
-  <script src="js/chartEngine.js?v=3.2.4"></script>
-  <script src="js/strikeAdvisor.js?v=3.2.4"></script>
-  <script src="js/flashScalpSniper.js?v=3.2.4"></script>
-  <script src="js/optionChain.js?v=3.2.4"></script>
-  <script src="js/paperBroker.js?v=3.2.4"></script>
-  <script src="js/strategyEngine.js?v=3.2.4"></script>
-  <script src="js/backtestEngine.js?v=3.2.4"></script>
-  <script src="js/brokerBridge.js?v=3.2.4"></script>
-  <script src="js/app.js?v=3.2.4"></script>
-  <script src="js/websocketClient.js?v=3.2.4"></script>
+  <!-- External JS Scripts (Fallback to root if uploaded to root directory) -->
+  <script src="js/audioEffects.js?v=3.2.5" onerror="this.onerror=null;this.src='audioEffects.js?v=3.2.5'"></script>
+  <script src="js/state.js?v=3.2.5" onerror="this.onerror=null;this.src='state.js?v=3.2.5'"></script>
+  <script src="js/candleStructure.js?v=3.2.5" onerror="this.onerror=null;this.src='candleStructure.js?v=3.2.5'"></script>
+  <script src="js/chartEngine.js?v=3.2.5" onerror="this.onerror=null;this.src='chartEngine.js?v=3.2.5'"></script>
+  <script src="js/strikeAdvisor.js?v=3.2.5" onerror="this.onerror=null;this.src='strikeAdvisor.js?v=3.2.5'"></script>
+  <script src="js/flashScalpSniper.js?v=3.2.5" onerror="this.onerror=null;this.src='flashScalpSniper.js?v=3.2.5'"></script>
+  <script src="js/optionChain.js?v=3.2.5" onerror="this.onerror=null;this.src='optionChain.js?v=3.2.5'"></script>
+  <script src="js/paperBroker.js?v=3.2.5" onerror="this.onerror=null;this.src='paperBroker.js?v=3.2.5'"></script>
+  <script src="js/strategyEngine.js?v=3.2.5" onerror="this.onerror=null;this.src='strategyEngine.js?v=3.2.5'"></script>
+  <script src="js/backtestEngine.js?v=3.2.5" onerror="this.onerror=null;this.src='backtestEngine.js?v=3.2.5'"></script>
+  <script src="js/brokerBridge.js?v=3.2.5" onerror="this.onerror=null;this.src='brokerBridge.js?v=3.2.5'"></script>
+  <script src="js/app.js?v=3.2.5" onerror="this.onerror=null;this.src='app.js?v=3.2.5'"></script>
+  <script src="js/websocketClient.js?v=3.2.5" onerror="this.onerror=null;this.src='websocketClient.js?v=3.2.5'"></script>
 
   <!-- PWA Service Worker Registration, Proactive Version Checking & Auto-Refresh Modal -->
   <script>
-    const APP_CURRENT_VERSION = 'v3.2.4';
+    const APP_CURRENT_VERSION = 'v3.2.5';
 
     // Global hard refresh function available to all buttons and events
     window.triggerAppHardRefresh = async function() {
@@ -1609,7 +1556,7 @@ class BankNiftyCustomScalper(Strategy):
 
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js?v=3.2.4')
+        navigator.serviceWorker.register('./sw.js?v=3.2.5')
           .then(reg => {
             console.log('⚡ PWA Service Worker Registered:', reg.scope);
             reg.update();
@@ -1639,7 +1586,7 @@ class BankNiftyCustomScalper(Strategy):
         if (window.caches) {
           caches.keys().then(keys => {
             keys.forEach(k => {
-              if (k !== 'banknifty-algoedge-v3.2.4') {
+              if (k !== 'banknifty-algoedge-v3.2.5') {
                 caches.delete(k);
               }
             });
