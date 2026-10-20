@@ -3028,10 +3028,9 @@
   color: var(--cyan-primary);
 }
 
-/* Guaranteed Visibility for Force Refresh & Mobile Live Buttons across all mobile viewports */
+/* Guaranteed Visibility for Force Refresh Button across all mobile viewports */
 #btn-force-refresh,
-.btn-force-refresh-header,
-#btn-mobile-live-connect {
+.btn-force-refresh-header {
   display: inline-flex !important;
   align-items: center !important;
   gap: 5px !important;
@@ -3041,8 +3040,7 @@
 
 @media (max-width: 900px) {
   #btn-force-refresh,
-  .btn-force-refresh-header,
-  #btn-mobile-live-connect {
+  .btn-force-refresh-header {
     display: inline-flex !important;
     padding: 3px 8px !important;
     font-size: 0.70rem !important;
@@ -3050,9 +3048,6 @@
 }
 
 @media (max-width: 480px) {
-  #btn-mobile-live-connect .mobile-live-btn-text {
-    display: none;
-  }
   #btn-force-refresh .refresh-btn-text {
     display: none;
   }
