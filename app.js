@@ -227,16 +227,19 @@ class Application {
     const drawerRefreshBtn = document.getElementById('btn-drawer-refresh');
 
     if (forceRefreshBtn) {
-      forceRefreshBtn.addEventListener('click', () => triggerAppHardRefresh());
+      forceRefreshBtn.addEventListener('click', () => window.triggerAppHardRefresh ? window.triggerAppHardRefresh() : triggerAppHardRefresh());
     }
     if (drawerRefreshBtn) {
-      drawerRefreshBtn.addEventListener('click', () => triggerAppHardRefresh());
+      drawerRefreshBtn.addEventListener('click', () => window.triggerAppHardRefresh ? window.triggerAppHardRefresh() : triggerAppHardRefresh());
     }
     if (updateReloadBtn) {
-      updateReloadBtn.addEventListener('click', () => triggerAppHardRefresh());
+      updateReloadBtn.addEventListener('click', () => window.triggerAppHardRefresh ? window.triggerAppHardRefresh() : triggerAppHardRefresh());
     }
     if (updateDismissBtn && updateBanner) {
-      updateDismissBtn.addEventListener('click', () => { updateBanner.style.display = 'none'; });
+      updateDismissBtn.addEventListener('click', () => { 
+        if (window.dismissUpdateBanner) window.dismissUpdateBanner();
+        else updateBanner.style.display = 'none'; 
+      });
     }
 
     // Bind Global Keyboard Shortcuts (Cmd+R, Ctrl+R, Cmd+Shift+R, Ctrl+Shift+R, F5) inside Standalone App
@@ -357,26 +360,20 @@ class Application {
         document.querySelectorAll('.mob-nav-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
 
-        const tabTerminal = document.getElementById('tab-terminal');
-
         if (mobTab === 'chart') {
-          if (tabTerminal) tabTerminal.classList.remove('mobile-view-radar');
           this.switchTab('terminal');
           if (this.chartEngine) {
             setTimeout(() => this.chartEngine.resize(), 60);
           }
           window.scrollTo({ top: 0, behavior: 'smooth' });
         } else if (mobTab === 'radar') {
-          if (tabTerminal) tabTerminal.classList.add('mobile-view-radar');
           this.switchTab('terminal');
           const radar = document.querySelector('.horizontal-radar-panel');
           if (radar) radar.scrollIntoView({ behavior: 'smooth' });
         } else if (mobTab === 'optionchain') {
-          if (tabTerminal) tabTerminal.classList.remove('mobile-view-radar');
           this.switchTab('optionchain');
           window.scrollTo({ top: 0, behavior: 'smooth' });
         } else if (mobTab === 'paper') {
-          if (tabTerminal) tabTerminal.classList.remove('mobile-view-radar');
           this.switchTab('terminal');
           const posBtn = document.querySelector('.sub-tab-btn[data-subtab="positions"]');
           if (posBtn) posBtn.click();
@@ -2748,7 +2745,8 @@ class Application {
   }
 
   updateOrientationUI() {
-    const isLandscape = (typeof window.matchMedia === 'function' && window.matchMedia('(orientation: landscape)').matches) || 
+    const isLandscape = document.body.classList.contains('forced-landscape') ||
+      (typeof window.matchMedia === 'function' && window.matchMedia('(orientation: landscape)').matches) || 
       (typeof screen !== 'undefined' && screen.orientation && screen.orientation.type && screen.orientation.type.includes('landscape'));
 
     const landscapeBtn = document.getElementById('btn-toggle-landscape');
@@ -2778,13 +2776,22 @@ class Application {
 
   async toggleMobileLandscape() {
     try {
-      const isLandscape = (typeof window.matchMedia === 'function' && window.matchMedia('(orientation: landscape)').matches) || 
+      const isLandscape = document.body.classList.contains('forced-landscape') ||
+        (typeof window.matchMedia === 'function' && window.matchMedia('(orientation: landscape)').matches) || 
         (typeof screen !== 'undefined' && screen.orientation && screen.orientation.type && screen.orientation.type.includes('landscape'));
       const screenObj = typeof screen !== 'undefined' ? screen : (typeof window !== 'undefined' ? window.screen : null);
 
       if (!isLandscape) {
         // --- SWITCH TO LANDSCAPE ---
+        document.body.classList.add('forced-landscape');
         let locked = false;
+        // 1. Enter fullscreen first to satisfy Chrome Android user-gesture requirements
+        if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
+          try {
+            await document.documentElement.requestFullscreen();
+          } catch (eFs) {}
+        }
+        // 2. Lock orientation to landscape
         if (screenObj && screenObj.orientation && screenObj.orientation.lock) {
           try {
             await screenObj.orientation.lock('landscape');
@@ -2796,42 +2803,32 @@ class Application {
             } catch (e2) {}
           }
         }
-        if (!locked && !document.fullscreenElement && document.documentElement.requestFullscreen) {
-          await document.documentElement.requestFullscreen().catch(() => {});
-          if (screenObj && screenObj.orientation && screenObj.orientation.lock) {
-            await screenObj.orientation.lock('landscape').catch(() => {});
-          }
-        }
         if (window.showToast) {
-          window.showToast('🔄 Switched to Landscape Widescreen Mode', 'success');
+          window.showToast('🔄 Switched to Landscape Widescreen Mode (Tilt phone sideways for best view)', 'success');
         }
       } else {
         // --- SWITCH TO PORTRAIT ---
-        let locked = false;
+        document.body.classList.remove('forced-landscape');
+        // 1. Unlock orientation first so screen accelerometer is freely available
+        if (screenObj && screenObj.orientation && screenObj.orientation.unlock) {
+          try { screenObj.orientation.unlock(); } catch (e) {}
+        }
+        // 2. Attempt locking back to portrait
         if (screenObj && screenObj.orientation && screenObj.orientation.lock) {
           try {
             await screenObj.orientation.lock('portrait-primary');
-            locked = true;
           } catch (e1) {
             try {
               await screenObj.orientation.lock('portrait');
-              locked = true;
             } catch (e2) {}
           }
         }
-
-        // If orientation lock was not accepted by browser, unlock orientation so the phone's physical gyroscope can switch to portrait
-        if (!locked && screenObj && screenObj.orientation && screenObj.orientation.unlock) {
-          try { screenObj.orientation.unlock(); } catch (e) {}
-        }
-
-        // If in fullscreen and not standalone, exit fullscreen smoothly
-        if (!locked && document.fullscreenElement && document.exitFullscreen) {
+        // 3. Exit fullscreen so browser bars return cleanly
+        if (document.fullscreenElement && document.exitFullscreen) {
           await document.exitFullscreen().catch(() => {});
         }
-
         if (window.showToast) {
-          window.showToast(locked ? '📱 Switched to Portrait View' : '📱 Switched to Portrait (Rotate phone upright if Auto-Rotate locked)', 'info');
+          window.showToast('📱 Switched to Portrait View', 'info');
         }
       }
 

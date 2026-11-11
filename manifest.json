@@ -1,4 +1,5 @@
 {
+  "id": "./",
   "name": "BankNifty AlgoEdge Pro",
   "short_name": "AlgoEdge Pro",
   "description": "Institutional-grade BankNifty intraday algorithmic trading terminal, AI strike advisor, and option chain analytics.",

@@ -17,10 +17,10 @@
   <link rel="apple-touch-icon" href="assets/icon-192.png">
 
   <!-- CSS Stylesheets -->
-  <link rel="stylesheet" href="css/main.css?v=3.2.6">
-  <link rel="stylesheet" href="css/terminal.css?v=3.2.6">
-  <link rel="stylesheet" href="css/strategies.css?v=3.2.6">
-  <link rel="stylesheet" href="css/optionchain.css?v=3.2.6">
+  <link rel="stylesheet" href="css/main.css?v=3.3.1">
+  <link rel="stylesheet" href="css/terminal.css?v=3.3.1">
+  <link rel="stylesheet" href="css/strategies.css?v=3.3.1">
+  <link rel="stylesheet" href="css/optionchain.css?v=3.3.1">
 
   <!-- TradingView Official Library -->
   <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
@@ -32,13 +32,13 @@
     <div style="display: flex; align-items: center; gap: 8px;">
       <span style="font-size: 1.25rem;">⚡</span>
       <div>
-        <div style="color: #34D399; font-weight: 800; font-family: var(--font-heading); font-size: 0.85rem;">UPDATE AVAILABLE (v3.2.4)</div>
-        <div id="pwa-update-banner-desc" style="font-size: 0.68rem; color: #CBD5E1;">Live Market Feed, Mobile Direct Wi-Fi Streaming &amp; Real-Time Greeks ready!</div>
+        <div id="pwa-update-title" style="color: #34D399; font-weight: 800; font-family: var(--font-heading); font-size: 0.85rem;">UPDATE AVAILABLE</div>
+        <div id="pwa-update-banner-desc" style="font-size: 0.68rem; color: #CBD5E1;">New intraday algorithmic improvements &amp; layout updates ready!</div>
       </div>
     </div>
     <div style="display: flex; gap: 8px; flex-shrink: 0;">
       <button id="btn-update-reload" class="btn btn-sm" style="background: linear-gradient(135deg, #10B981 0%, #059669 100%); color: #FFF; font-weight: 800; padding: 5px 14px; font-size: 0.76rem; border-radius: 4px; border: 1px solid #34D399; cursor: pointer; box-shadow: 0 0 10px rgba(16, 185, 129, 0.5);" onclick="window.triggerAppHardRefresh()">🔄 Update &amp; Refresh</button>
-      <button id="btn-update-dismiss" class="btn btn-secondary btn-sm" style="padding: 5px 8px; font-size: 0.72rem; color: #94A3B8; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); border-radius: 4px; cursor: pointer;" onclick="document.getElementById('pwa-update-banner').style.display='none'">✕</button>
+      <button id="btn-update-dismiss" class="btn btn-secondary btn-sm" style="padding: 5px 8px; font-size: 0.72rem; color: #94A3B8; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); border-radius: 4px; cursor: pointer;" onclick="window.dismissUpdateBanner()">✕</button>
     </div>
   </div>
 
@@ -383,6 +383,7 @@
 
               <!-- Indicators -->
               <div class="indicator-group">
+                <button class="ind-toggle-btn active" data-ind="keylevels" title="Toggle Daily Pivots & CPR Key Levels (R1-R3, Pivot, S1-S3)">🎯 Key Levels</button>
                 <button class="ind-toggle-btn active" data-ind="supertrend">Supertrend (10, 1)</button>
                 <button class="ind-toggle-btn active" data-ind="bollinger">Bollinger Bands (20, 2)</button>
                 <button class="ind-toggle-btn active" data-ind="vwap">VWAP</button>
@@ -1504,77 +1505,94 @@ class BankNiftyCustomScalper(Strategy):
   </div>
 
   <!-- External JS Scripts -->
-  <script src="js/audioEffects.js?v=3.2.6"></script>
-  <script src="js/state.js?v=3.2.6"></script>
-  <script src="js/candleStructure.js?v=3.2.6"></script>
-  <script src="js/chartEngine.js?v=3.2.6"></script>
-  <script src="js/strikeAdvisor.js?v=3.2.6"></script>
-  <script src="js/flashScalpSniper.js?v=3.2.6"></script>
-  <script src="js/optionChain.js?v=3.2.6"></script>
-  <script src="js/paperBroker.js?v=3.2.6"></script>
-  <script src="js/strategyEngine.js?v=3.2.6"></script>
-  <script src="js/backtestEngine.js?v=3.2.6"></script>
-  <script src="js/brokerBridge.js?v=3.2.6"></script>
-  <script src="js/app.js?v=3.2.6"></script>
-  <script src="js/websocketClient.js?v=3.2.6"></script>
+  <script src="js/audioEffects.js?v=3.3.0"></script>
+  <script src="js/state.js?v=3.3.0"></script>
+  <script src="js/candleStructure.js?v=3.3.0"></script>
+  <script src="js/chartEngine.js?v=3.3.0"></script>
+  <script src="js/strikeAdvisor.js?v=3.3.0"></script>
+  <script src="js/flashScalpSniper.js?v=3.3.0"></script>
+  <script src="js/optionChain.js?v=3.3.0"></script>
+  <script src="js/paperBroker.js?v=3.3.0"></script>
+  <script src="js/strategyEngine.js?v=3.3.0"></script>
+  <script src="js/backtestEngine.js?v=3.3.0"></script>
+  <script src="js/brokerBridge.js?v=3.3.0"></script>
+  <script src="js/app.js?v=3.3.0"></script>
+  <script src="js/websocketClient.js?v=3.3.0"></script>
 
   <!-- PWA Service Worker Registration, Proactive Version Checking & Auto-Refresh Modal -->
   <script>
-    const APP_CURRENT_VERSION = 'v3.2.6';
+    const APP_CURRENT_VERSION = 'v3.3.1';
 
     // Global hard refresh function available to all buttons and events
     window.triggerAppHardRefresh = async function() {
-      console.log('🔄 Triggering full application hard refresh & cache purge...');
+      console.log('🔄 Triggering full application hard refresh & cache purge for', APP_CURRENT_VERSION);
       localStorage.setItem('algoedge_app_version', APP_CURRENT_VERSION);
+      sessionStorage.setItem('algoedge_just_updated', 'true');
+      const banner = document.getElementById('pwa-update-banner');
+      if (banner) banner.style.display = 'none';
+
       try {
+        if ('serviceWorker' in navigator) {
+          const reg = await navigator.serviceWorker.getRegistration();
+          if (reg && reg.waiting) {
+            reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+          }
+        }
         if (window.caches) {
           const keys = await caches.keys();
-          await Promise.all(keys.map(k => caches.delete(k)));
-        }
-        if ('serviceWorker' in navigator) {
-          const registrations = await navigator.serviceWorker.getRegistrations();
-          for (let reg of registrations) {
-            await reg.unregister();
-          }
+          await Promise.all(keys.filter(k => k !== `banknifty-algoedge-${APP_CURRENT_VERSION}`).map(k => caches.delete(k)));
         }
       } catch (err) {
         console.warn('Cache purge note:', err);
       }
       const targetUrl = new URL(window.location.href);
+      targetUrl.searchParams.set('v', APP_CURRENT_VERSION);
       targetUrl.searchParams.set('reload', Date.now());
       window.location.replace(targetUrl.toString());
     };
 
-    // Auto-detect if user is on an older version and pop up the update banner immediately
-    const lastSavedVer = localStorage.getItem('algoedge_app_version');
-    if (!lastSavedVer || lastSavedVer !== APP_CURRENT_VERSION) {
+    window.dismissUpdateBanner = function() {
+      const banner = document.getElementById('pwa-update-banner');
+      if (banner) banner.style.display = 'none';
+      localStorage.setItem('algoedge_app_version', APP_CURRENT_VERSION);
+    };
+
+    // If page just reloaded after an update, keep banner hidden and notify user
+    if (sessionStorage.getItem('algoedge_just_updated')) {
+      sessionStorage.removeItem('algoedge_just_updated');
+      localStorage.setItem('algoedge_app_version', APP_CURRENT_VERSION);
       setTimeout(() => {
-        const banner = document.getElementById('pwa-update-banner');
-        if (banner) banner.style.display = 'flex';
-      }, 600);
+        if (window.showToast) window.showToast('✅ Application updated to latest version (' + APP_CURRENT_VERSION + ')', 'success');
+      }, 500);
     }
 
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js?v=3.2.6')
+        navigator.serviceWorker.register(`./sw.js?v=${APP_CURRENT_VERSION}`)
           .then(reg => {
             console.log('⚡ PWA Service Worker Registered:', reg.scope);
             reg.update();
 
-            // If a worker is already waiting to activate
-            if (reg.waiting) {
-              const banner = document.getElementById('pwa-update-banner');
-              if (banner) banner.style.display = 'flex';
+            // ONLY show the banner if an existing worker is already controlling AND a newer worker is waiting
+            if (reg.waiting && navigator.serviceWorker.controller) {
+              const lastSavedVer = localStorage.getItem('algoedge_app_version');
+              if (lastSavedVer !== APP_CURRENT_VERSION) {
+                const banner = document.getElementById('pwa-update-banner');
+                if (banner) banner.style.display = 'flex';
+              }
             }
 
             // Detect new Service Worker ready to activate
             reg.addEventListener('updatefound', () => {
               const newWorker = reg.installing;
-              if (newWorker) {
+              if (newWorker && navigator.serviceWorker.controller) {
                 newWorker.addEventListener('statechange', () => {
-                  if (newWorker.state === 'installed' || newWorker.state === 'activated') {
-                    const banner = document.getElementById('pwa-update-banner');
-                    if (banner) banner.style.display = 'flex';
+                  if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                    const lastSavedVer = localStorage.getItem('algoedge_app_version');
+                    if (lastSavedVer !== APP_CURRENT_VERSION) {
+                      const banner = document.getElementById('pwa-update-banner');
+                      if (banner) banner.style.display = 'flex';
+                    }
                   }
                 });
               }
@@ -1586,7 +1604,7 @@ class BankNiftyCustomScalper(Strategy):
         if (window.caches) {
           caches.keys().then(keys => {
             keys.forEach(k => {
-              if (k !== 'banknifty-algoedge-v3.2.6') {
+              if (k !== `banknifty-algoedge-${APP_CURRENT_VERSION}`) {
                 caches.delete(k);
               }
             });

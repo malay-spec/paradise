@@ -1,13 +1,9 @@
 // BankNifty AlgoEdge Pro — Service Worker (PWA & Offline Cache)
-const CACHE_NAME = 'banknifty-algoedge-v3.2.6';
+const CACHE_NAME = 'banknifty-algoedge-v3.3.1';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
   './manifest.json',
-  './terminal.css',
-  './app.js',
-  './state.js',
-  './websocketClient.js',
   './css/main.css',
   './css/terminal.css',
   './css/strategies.css',
@@ -29,6 +25,12 @@ const ASSETS_TO_CACHE = [
   './assets/icon-192.png',
   './assets/icon-512.png'
 ];
+
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
+});
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();

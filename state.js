@@ -54,7 +54,8 @@ class AppState {
       ema50: true,
       rsi: true,
       bollinger: true,
-      volume: true
+      volume: true,
+      keylevels: true
     };
 
     // Candles by instrument and timeframe
@@ -1187,6 +1188,112 @@ class AppState {
 
   isMarketOpen() {
     return this.getMarketStatus().isOpen;
+  }
+
+  getKeyLevels() {
+    // 1. Identify previous completed trading session's High, Low, Close
+    let prevHigh = null, prevLow = null, prevClose = null;
+    const spot1d = (this.candles && this.candles["BANKNIFTY_SPOT"] && this.candles["BANKNIFTY_SPOT"]["1d"]) || [];
+    
+    // Determine active session date (e.g. "2026-10-21")
+    let activeDate = this.sessionDate || null;
+    const candles5m = (this.candles && this.candles["BANKNIFTY_SPOT"] && this.candles["BANKNIFTY_SPOT"]["5m"]) || [];
+    if (!activeDate && candles5m.length > 0) {
+      activeDate = candles5m[candles5m.length - 1].date;
+    }
+
+    if (spot1d.length >= 2) {
+      const lastDaily = spot1d[spot1d.length - 1];
+      const prevDaily = spot1d[spot1d.length - 2];
+      
+      // If last daily candle is today's in-progress session, previous completed day is spot1d[length - 2]
+      if (activeDate && lastDaily.date === activeDate) {
+        prevHigh = prevDaily.high;
+        prevLow = prevDaily.low;
+        prevClose = prevDaily.close;
+      } else {
+        prevHigh = lastDaily.high;
+        prevLow = lastDaily.low;
+        prevClose = lastDaily.close;
+      }
+    } else if (spot1d.length === 1) {
+      prevHigh = spot1d[0].high;
+      prevLow = spot1d[0].low;
+      prevClose = spot1d[0].close;
+    }
+
+    // 2. Fallback: Multi-session 5m intraday candles
+    if (prevHigh === null || prevLow === null || prevClose === null) {
+      if (candles5m.length > 0) {
+        const dates = [...new Set(candles5m.map(c => c.date).filter(Boolean))];
+        if (dates.length >= 2) {
+          const prevDate = dates[dates.length - 2];
+          const prevBars = candles5m.filter(c => c.date === prevDate);
+          if (prevBars.length > 0) {
+            prevHigh = Math.max(...prevBars.map(c => c.high));
+            prevLow = Math.min(...prevBars.map(c => c.low));
+            prevClose = prevBars[prevBars.length - 1].close;
+          }
+        }
+      }
+    }
+
+    // 3. Fallback: Spot object prev_close / prevClose
+    if (prevClose === null && this.prevClose && this.prevClose > 20000) {
+      prevClose = this.prevClose;
+    }
+    const spot = this.spotPrice || 55500;
+    if (prevClose === null) prevClose = spot;
+    if (prevHigh === null) prevHigh = prevClose + 350;
+    if (prevLow === null) prevLow = prevClose - 350;
+
+    const H = Number(prevHigh);
+    const L = Number(prevLow);
+    const C = Number(prevClose);
+
+    // Classic Standard Floor Pivot Point & Central Pivot Range (CPR)
+    const P = (H + L + C) / 3;
+    const BC = (H + L) / 2;
+    const TC = (2 * P) - BC;
+    const cprTop = Math.max(TC, BC);
+    const cprBottom = Math.min(TC, BC);
+    const cprWidth = Math.abs(TC - BC);
+    const cprWidthPct = (cprWidth / P) * 100;
+
+    // Support and Resistance Key Levels (R1, R2, R3, S1, S2, S3)
+    const rangeHL = H - L;
+    const R1 = (2 * P) - L;
+    const S1 = (2 * P) - H;
+    const R2 = P + rangeHL;
+    const S2 = P - rangeHL;
+    const R3 = R1 + rangeHL;
+    const S3 = S1 - rangeHL;
+
+    let cprType = 'AVERAGE';
+    if (cprWidthPct < 0.25) cprType = 'NARROW';
+    else if (cprWidthPct > 0.55) cprType = 'WIDE';
+
+    return {
+      H: round2(H),
+      L: round2(L),
+      C: round2(C),
+      P: round2(P),
+      TC: round2(TC),
+      BC: round2(BC),
+      cprTop: round2(cprTop),
+      cprBottom: round2(cprBottom),
+      cprWidth: round2(cprWidth),
+      cprWidthPct: round2(cprWidthPct),
+      cprType,
+      isNarrowCpr: cprType === 'NARROW',
+      isWideCpr: cprType === 'WIDE',
+      R1: round2(R1),
+      R2: round2(R2),
+      R3: round2(R3),
+      S1: round2(S1),
+      S2: round2(S2),
+      S3: round2(S3)
+    };
   }
 
   seedInitialPositionsAndOrders() {

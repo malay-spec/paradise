@@ -63,7 +63,7 @@
   height: 640px;
 }
 
-@media (display-mode: standalone) {
+@media (min-width: 901px) and (display-mode: standalone) {
   .chart-panel-area {
     min-height: 540px;
     height: calc(100vh - 210px);
@@ -1842,13 +1842,26 @@
 }
 
 @media (max-width: 768px), (orientation: landscape) and (max-height: 600px), (max-width: 960px) and (orientation: landscape) {
-  /* Prevent horizontal screen expansion on phones and lock text scaling */
-  html, body, .app-container {
+  /* Prevent horizontal screen expansion on phones and enable smooth native vertical scrolling */
+  html, body {
     width: 100% !important;
     max-width: 100% !important;
+    height: auto !important;
+    min-height: 100% !important;
     overflow-x: hidden !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
     -webkit-text-size-adjust: 100% !important;
     text-size-adjust: 100% !important;
+  }
+
+  .app-container {
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    min-height: 100% !important;
+    overflow-x: hidden !important;
+    overflow-y: visible !important;
   }
 
   /* Compact Native Mobile Header */
@@ -1940,7 +1953,20 @@
   .header-actions {
     display: flex !important;
     align-items: center !important;
-    gap: 5px !important;
+    gap: 4px !important;
+    flex-shrink: 0 !important;
+  }
+
+  .header-actions #btn-toggle-landscape {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 4px !important;
+    height: 28px !important;
+    padding: 2px 7px !important;
+    font-size: 0.68rem !important;
+    font-weight: 700 !important;
+    border-radius: 4px !important;
     flex-shrink: 0 !important;
   }
 
@@ -1961,9 +1987,20 @@
     flex-shrink: 0 !important;
   }
 
-  @media (max-width: 380px) {
+  @media (max-width: 480px) {
+    .header-actions #btn-toggle-landscape .landscape-toggle-text {
+      display: none !important;
+    }
     .header-actions #btn-force-refresh .refresh-btn-text {
       display: none !important;
+    }
+    .market-status-pill #market-status-text {
+      display: none !important;
+    }
+    .market-status-pill {
+      padding: 3px !important;
+      min-width: 18px !important;
+      justify-content: center !important;
     }
   }
 
@@ -2124,17 +2161,10 @@
     display: none !important;
   }
 
-  /* Mobile View Switcher: Chart vs AI Radar inside Live Terminal */
-  #tab-terminal.mobile-view-radar .chart-panel-area,
-  #tab-terminal.mobile-view-radar .bottom-trade-area {
-    display: none !important;
-  }
-
-  #tab-terminal.mobile-view-radar .horizontal-radar-panel {
-    display: flex !important;
-  }
-
-  #tab-terminal:not(.mobile-view-radar) .horizontal-radar-panel {
+  /* All sections remain visible and scrollable in order on mobile (Same as Laptop view) */
+  #tab-terminal .chart-panel-area,
+  #tab-terminal .horizontal-radar-panel,
+  #tab-terminal .bottom-trade-area {
     display: flex !important;
   }
 
@@ -2371,40 +2401,105 @@
   }
 
   .brand-info h1 {
-    font-size: 0.85rem !important;
+    font-size: 0.82rem !important;
   }
 
   .chart-panel-area {
-    min-height: 310px !important;
-    height: 340px !important;
+    min-height: 270px !important;
+    height: 310px !important;
   }
+}
+
 /* ==========================================================================
-   PORTRAIT VIEWPORT STABILIZER (Clean Reset after Landscape Mode)
+   PORTRAIT VIEWPORT STABILIZER (Full Laptop View Accessible on Mobile)
    ========================================================================== */
-@media (orientation: portrait) and (max-width: 900px) {
-  html, body, .app-container {
+@media (orientation: portrait) and (max-width: 900px), (max-width: 768px) {
+  html, body {
     width: 100% !important;
     max-width: 100% !important;
+    height: auto !important;
+    min-height: 100% !important;
     overflow-x: hidden !important;
-    -webkit-text-size-adjust: 100% !important;
-    text-size-adjust: 100% !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
   }
 
-  .main-content,
-  .terminal-grid,
-  .tab-panel {
+  .app-container {
     width: 100% !important;
     max-width: 100% !important;
+    height: auto !important;
+    min-height: 100% !important;
     overflow-x: hidden !important;
+    overflow-y: visible !important;
+  }
+
+  .main-content {
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    min-height: auto !important;
+    overflow: visible !important;
+    display: block !important;
+    box-sizing: border-box !important;
+  }
+
+  .tab-panel.active {
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    min-height: auto !important;
+    overflow: visible !important;
+    display: block !important;
+    box-sizing: border-box !important;
+  }
+
+  .terminal-grid {
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    overflow: visible !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 12px !important;
+    padding: 8px !important;
+    padding-bottom: 85px !important; /* bottom nav bar clearance */
     box-sizing: border-box !important;
   }
 
   .chart-panel-area {
     width: 100% !important;
     max-width: 100% !important;
-    height: 380px !important;
-    min-height: 320px !important;
+    height: 310px !important;
+    min-height: 270px !important;
     box-sizing: border-box !important;
+  }
+
+  .horizontal-radar-panel {
+    display: flex !important;
+    flex-direction: column !important;
+    width: 100% !important;
+    overflow: visible !important;
+  }
+
+  .strike-suggestions-horizontal-grid {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+    width: 100% !important;
+  }
+
+  .bottom-trade-area {
+    display: flex !important;
+    flex-direction: column !important;
+    width: 100% !important;
+    overflow: visible !important;
+    margin-bottom: 20px !important;
+  }
+
+  .trade-table-wrapper {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    width: 100% !important;
   }
 
   .chart-canvas-wrapper,
@@ -2418,6 +2513,30 @@
   canvas {
     max-width: 100% !important;
   }
+}
+
+/* Forced Landscape Mode (Instant Fullscreen Widescreen on Click even if device Auto-Rotate is locked) */
+body.forced-landscape .ticker-bar {
+  display: none !important;
+}
+body.forced-landscape .app-header {
+  height: 38px !important;
+  min-height: 38px !important;
+  padding: 0 10px !important;
+}
+body.forced-landscape .brand-logo {
+  width: 20px !important;
+  height: 20px !important;
+}
+body.forced-landscape .brand-info h1 {
+  font-size: 0.78rem !important;
+}
+body.forced-landscape .chart-panel-area {
+  height: calc(100vh - 82px) !important;
+  min-height: 260px !important;
+}
+body.forced-landscape .mobile-bottom-nav {
+  height: 40px !important;
 }
 
 /* ==========================================================================

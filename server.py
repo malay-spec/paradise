@@ -231,6 +231,16 @@ def compute_realistic_volume(ts, open_p, high_p, low_p, close_p, raw_vol=None, i
     vol = int(base_vol * time_mult * spread_mult * (0.85 + 0.30 * rng.random()))
     return max(18000, vol)
 
+def get_lan_ip():
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        ip = s.getsockname()[0]
+        s.close()
+        return ip
+    except Exception:
+        return "127.0.0.1"
+
 def fetch_live_market_data():
     global cached_market_data, last_market_fetch_time
     now = time.time()
@@ -464,7 +474,6 @@ def fetch_live_market_data():
                 constituents_list = cached_constituents
             elif cached_market_data and cached_market_data.get('constituents'):
                 constituents_list = cached_market_data['constituents']
-
     results['constituents'] = constituents_list
     results['timestamp'] = time.strftime("%Y-%m-%d %H:%M:%S IST")
     results['status'] = "LIVE_NSE_FEED"
@@ -473,9 +482,31 @@ def fetch_live_market_data():
     cached_market_data = results
     last_market_fetch_time = time.time()
     try:
+        slim_results = dict(results)
+        if 'candles_1d' in slim_results and isinstance(slim_results['candles_1d'], list):
+            slim_results['candles_1d'] = slim_results['candles_1d'][-120:]
+        if 'candles_5m' in slim_results and isinstance(slim_results['candles_5m'], list):
+            slim_results['candles_5m'] = slim_results['candles_5m'][-150:]
+
         snap_path = os.path.join(DIRECTORY, "data", "market_snapshot.json")
         with open(snap_path, "w") as f:
-            json.dump(results, f)
+            json.dump(slim_results, f)
+
+        root_snap = os.path.join(DIRECTORY, "market_snapshot.json")
+        with open(root_snap, "w") as f_r:
+            json.dump(slim_results, f_r)
+
+        # Mirror to Desktop folders for simple GitHub web upload
+        paths_to_mirror = [
+            os.path.expanduser("~/Desktop/paradise-pwa-files/data/market_snapshot.json"),
+            os.path.expanduser("~/Desktop/paradise-pwa-files/market_snapshot.json"),
+            os.path.expanduser("~/Desktop/paradise-github-update/1_ROOT_FILES/market_snapshot.json"),
+            os.path.expanduser("~/Desktop/paradise-github-update/2_DATA_FOLDER/market_snapshot.json"),
+        ]
+        for p in paths_to_mirror:
+            if os.path.isdir(os.path.dirname(p)):
+                with open(p, "w") as f_m:
+                    json.dump(slim_results, f_m)
     except Exception:
         pass
     return results
@@ -512,11 +543,33 @@ class AlgoTerminalHandler(http.server.SimpleHTTPRequestHandler):
                 self.send_header('Content-type', 'application/json')
                 self.end_headers()
                 m = cached_market_data or fetch_live_market_data()
-                cur_spot = float(m.get('spot', {}).get('price', 55810.5)) if m else 55810.5
+                cur_spot = float(m.get('spot', {}).get('price', 55488.1)) if m else 55488.1
+                lan_ip = get_lan_ip()
                 response = {
-                    "version": "3.2.2",
+                    "version": "3.3.1",
                     "build_time": int(time.time()),
-                    "cache_name": "banknifty-algoedge-v3.2.2",
+                    "cache_name": "banknifty-algoedge-v3.3.1",
+                    "spot": cur_spot,
+                    "lan_ip": lan_ip,
+                    "mobile_url": f"http://{lan_ip}:{PORT}",
+                    "ws_url": f"ws://{lan_ip}:{WS_PORT}"
+                }
+                self.wfile.write(json.dumps(response).encode('utf-8'))
+                return
+
+            if self.path.startswith('/api/mobile-info') or self.path.startswith('/api/lan-ip'):
+                self.send_response(200)
+                self.send_header('Content-type', 'application/json')
+                self.end_headers()
+                lan_ip = get_lan_ip()
+                m = cached_market_data or fetch_live_market_data()
+                cur_spot = float(m.get('spot', {}).get('price', 55488.1)) if m else 55488.1
+                response = {
+                    "lan_ip": lan_ip,
+                    "port": PORT,
+                    "ws_port": WS_PORT,
+                    "mobile_url": f"http://{lan_ip}:{PORT}",
+                    "ws_url": f"ws://{lan_ip}:{WS_PORT}",
                     "spot": cur_spot
                 }
                 self.wfile.write(json.dumps(response).encode('utf-8'))
@@ -810,10 +863,12 @@ def run_server():
 
     socketserver.ThreadingTCPServer.allow_reuse_address = True
     socketserver.ThreadingTCPServer.daemon_threads = True
+    lan_ip = get_lan_ip()
     with socketserver.ThreadingTCPServer(("", PORT), AlgoTerminalHandler) as httpd:
         print(f"================================================================")
         print(f" 🚀 BankNifty AlgoEdge Terminal running at http://localhost:{PORT}")
-        print(f" 📡 Low-Latency WebSocket Streamer running at ws://0.0.0.0:{WS_PORT}")
+        print(f" 📱 Mobile Live Terminal (same Wi-Fi): http://{lan_ip}:{PORT}")
+        print(f" 📡 Low-Latency WebSocket Streamer running at ws://{lan_ip}:{WS_PORT}")
         print(f" Serving directory: {DIRECTORY}")
         print(f" Press Ctrl+C to stop the server")
         print(f"================================================================")
